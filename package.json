@@ -1,0 +1,32 @@
+{
+  "name": "cryppledbot",
+  "version": "1.0.0",
+  "description": "This is a crypto trading bot implemented in nodejs that utilizes the coinbase pro API. It's trading strategy is a basic interpretation of the momemtum strategy.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/poptartboy0/CryppledBot.git"
+  },
+  "keywords": [
+    "crypto",
+    "bot",
+    "coinbase-pro",
+    "btc"
+  ],
+  "author": "Levi Leuthold",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/poptartboy0/CryppledBot/issues"
+  },
+  "homepage": "https://github.com/poptartboy0/CryppledBot#readme",
+  "dependencies": {
+    "coinbase-pro": "^0.9.0",
+    "dotenv": "^8.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^7.9.0"
+  }
+}
