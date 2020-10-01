@@ -1,6 +1,6 @@
 const CoinbasePro = require("coinbase-pro");
 require('dotenv').config()
-const {buyPosition, sellPosition} = require("./buyAndSellModule");
+const {buyPosition, sellPosition} = require("./buyAndSell");
 
 const key = `${process.env.API_KEY}`;
 const secret = `${process.env.API_SECRET}`;
