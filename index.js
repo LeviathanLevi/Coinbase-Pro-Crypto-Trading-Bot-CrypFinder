@@ -45,6 +45,10 @@ const orderPriceDelta = .0015; //The amount of extra room to give the sell/buy o
 const takerFee = .005; //Orders that provide liquidity are maker orders, subject to maker fees
 const makerFee = .005; //Orders that take liquidity are taker orders, subject to taker fees
 
+//Coinbase portfolios (profiles):
+const tradingProfileName = "BTC trader"; //This is the name of the profile you want the bot to trade in
+const depositProfileName = "Profit savings"; //This is the name of the profile you want to deposit some profits to
+
 //Global variable tracks the currentPrice. Updated by the websocket
 let currentPrice;
 
@@ -218,14 +222,32 @@ mainLoop(); //begin
 
 // async function test() {
 //     try {
-//         // const returnVal = await authedClient.getAccounts();
-//         // console.log(returnVal);
-//         let coinbaseLibObject = new coinbaseLib(key, secret, passphrase, apiURI);
+//         let tradeProfileID;
+//         let depositProfileID;
+        
+//         let coinbaseLibObject = new coinbaseProLib(key, secret, passphrase, apiURI);
 //         const result = await coinbaseLibObject.getProfiles();
-//         console.log("Woohoo: " + JSON.stringify(result));
+        
+//         console.log(result);
+
+//         for (let i = 0; i < result.length; ++i) {
+//             if (result[i].name === depositProfileName) {
+//                 depositProfileID = result[i].id;
+//             } else if (result[i].name === tradingProfileName) {
+//                 tradeProfileID = result[i].id;
+//             }
+//         }
+
+//         console.log("dep: " + depositProfileID + " trade " + tradeProfileID); 
+
+//         const transferResult = await coinbaseLibObject.profileTransfer(tradeProfileID, depositProfileID, "BTC", "0.0001222");
+
+//         console.log(transferResult);
 
 //     } catch(err) {
-//         console.log(err);
+//         const message = "Error in test method";
+//         const errorMsg = new Error(err);
+//         console.log({ message, errorMsg, err });
 //     }
 // }
 

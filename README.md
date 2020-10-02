@@ -1,5 +1,5 @@
 # CrypFinder Bot 
-## Version 1.02
+## Version 1.05
 
 ## CrypFinder Summary: 
 CrypFinder is a Coinbase Pro API trading bot that implements a basic momentum trading strategy in NodeJS using the Coinbase Pro API. The bot will start by getting the amount of USD available for the provided API key's profile. If the amount is greater than 0 it will monitor the price changes of the BTC-USD product (could be modified to trade other products such as ETH, XRP, etc) using a peak/valley system if the price changes by the specified delta it will purchase a position. Then it will monitor price changes until the delta condition is met and profit condition, after selling for a profit it will transfer 40% to the associated Coinbase USD wallet and reinvest the other 60% and repeat the trading process.
