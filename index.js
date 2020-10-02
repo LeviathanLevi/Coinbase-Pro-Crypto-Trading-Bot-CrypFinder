@@ -1,6 +1,7 @@
 const CoinbasePro = require("coinbase-pro");
 require('dotenv').config()
 const {buyPosition, sellPosition} = require("./buyAndSell");
+const coinbaseProLib = require("./coinbaseProLibrary");
 
 const key = `${process.env.API_KEY}`;
 const secret = `${process.env.API_SECRET}`;
@@ -211,3 +212,21 @@ async function mainLoop() {
 }
 
 mainLoop(); //begin
+
+
+// Used for testing: 
+
+// async function test() {
+//     try {
+//         // const returnVal = await authedClient.getAccounts();
+//         // console.log(returnVal);
+//         let coinbaseLibObject = new coinbaseLib(key, secret, passphrase, apiURI);
+//         const result = await coinbaseLibObject.getProfiles();
+//         console.log("Woohoo: " + JSON.stringify(result));
+
+//     } catch(err) {
+//         console.log(err);
+//     }
+// }
+
+// test();
