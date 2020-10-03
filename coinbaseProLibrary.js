@@ -10,7 +10,9 @@ const crypto = require("crypto");
 const axios = require("axios");
 
 /**
- * Class: 
+ * Class: This class creates an easy way to create methods to call API endpoints. It stores
+ * the needed information upon construction and provides a method to sign messages. Which
+ * can then be used to create more endpoint calling methods.
  */
 class coinbaseProLib {
     /**
@@ -29,7 +31,11 @@ class coinbaseProLib {
     }
 
     /**
-     * Working, but sometimes the message signing fails like once every 10 tries or so for getProfiles?
+     * Creates the CB-ACCESS-SIGN header needed for executing a coinbase pro REST API endpoint call.
+     * 
+     * @param {string} method 
+     * @param {string} requestPath 
+     * @param {string} body 
      */
     async signMessage(method, requestPath, body) {
         try {
@@ -45,7 +51,6 @@ class coinbaseProLib {
                 what = timestamp + method + requestPath;
             } else {
                 what = timestamp + method + requestPath + JSON.stringify(body);
-                console.log(what);
             }
     
             // decode the base64 secret
@@ -67,8 +72,8 @@ class coinbaseProLib {
     }
 
     /**
-     * 
-     * 
+     * Calls the endpoint /profiles to get a list of the avaiable portfolio (profile) IDs for the account
+     * Check the documentation for more information on this endpoint.
      */
     async getProfiles() {
         try {
@@ -99,7 +104,9 @@ class coinbaseProLib {
     }
 
     /**
-     *
+     * Calls the /profiles/transfer endpoint that will let you transfer some currency from one profile to another.
+     * The fromProfileID must be the profile linked to the API key provided, this is where the funds are sourced.
+     * Check the coinbase pro api docs for more information on the restrictions around this endpoint.
      * 
      * @param {string} fromProfileID 
      * @param {string} toProfileID 

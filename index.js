@@ -10,12 +10,10 @@ const passphrase = `${process.env.API_PASSPHRASE}`;
 //Real environment (uncomment out if using in the real enviornment WARNING: you can lose real money, use at your own risk.):
 // const apiURI = "https://api.pro.coinbase.com";
 // const websocketURI = "wss://ws-feed.pro.coinbase.com";
-// const coinbaseAccountIDSearch = "Cash (USD)"; // work around for different names between sandbox and real env
 
 //Sandbox environment (uncomment out if using the sandbox for testing):
 const apiURI = "https://api-public.sandbox.pro.coinbase.com";
 const websocketURI = "wss://ws-feed-public.sandbox.pro.coinbase.com";
-const coinbaseAccountIDSearch = "USD Wallet"; // work around for different names between sandbox and real env
 
 // The websocket client provides price updates on the product, refer to the docs for more information
 const websocket = new CoinbasePro.WebsocketClient(
@@ -36,6 +34,10 @@ const authedClient = new CoinbasePro.AuthenticatedClient(
   passphrase,
   apiURI
 );
+
+//Custom coinbase library creation:
+const coinbaseLibObject = new coinbaseProLib(key, secret, passphrase, apiURI);
+
 
 //Global constants, consider tuning these values to optimize the bot's trading: 
 const sellPositionProfitDelta = .01; //Minimum amount of money needed to be made before selling position
@@ -79,10 +81,10 @@ function listenForPriceUpdates() {
  * @param {number} btcSize              The amount of BTC being traded with
  * @param {number} lastPeakPrice        Tracks the price highs
  * @param {number} lastValleyPrice      Tracks the price lows
- * @param {string} coinbaseAccountId    The coinbase account ID associated with the API key used for storing a chunk of the profits in coinbase
+ * @param {object} accountIds    The coinbase account ID associated with the API key used for storing a chunk of the profits in coinbase
  * @param {object} updatedPositionInfo  Contains 3 fields, positionExists (bool), positionAcquiredPrice (number), and positionAcquiredCost(number)
 */
-async function losePosition(btcSize, lastPeakPrice, lastValleyPrice,  coinbaseAccountId, updatedPositionInfo) {
+async function losePosition(btcSize, lastPeakPrice, lastValleyPrice,  accountIds, updatedPositionInfo) {
     while (updatedPositionInfo.positionExists === true) {
         await sleep(2000);
 
@@ -93,7 +95,7 @@ async function losePosition(btcSize, lastPeakPrice, lastValleyPrice,  coinbaseAc
             lastValleyPrice = currentPrice;
 
             if ((lastValleyPrice < lastPeakPrice - (lastPeakPrice * sellPositionDelta)) && (lastValleyPrice >= (updatedPositionInfo.positionAcquiredPrice + (updatedPositionInfo.positionAcquiredPrice * (sellPositionProfitDelta + makerFee + takerFee))))) {
-                await sellPosition(btcSize, coinbaseAccountId, updatedPositionInfo, currentPrice, orderPriceDelta, authedClient);
+                await sellPosition(btcSize, accountIds, updatedPositionInfo, currentPrice, orderPriceDelta, authedClient, coinbaseLibObject);
             }
         }
     }
@@ -125,18 +127,21 @@ async function gainPosition(usdBalance, lastPeakPrice, lastValleyPrice, updatedP
 
 /** 
  * Acquires some account ID information to be used for storing and retrieving information
+ * and depositing funds after a sell.
 */
 async function getAccountIDs() {
     let accountObject = {};
-
-    const coinBaseAccounts = await authedClient.getCoinbaseAccounts();
+        
+    // old way of transfering profits to coinbase instead of another profile:
+    // const coinBaseAccounts = await authedClient.getCoinbaseAccounts();
     
-    for (let i = 0; i < coinBaseAccounts.length; ++i) {
-        if (coinBaseAccounts[i].name === coinbaseAccountIDSearch) {
-            accountObject.coinbaseAccountId = coinBaseAccounts[i].id;
-        }
-    }
+    // for (let i = 0; i < coinBaseAccounts.length; ++i) {
+    //     if (coinBaseAccounts[i].name === coinbaseAccountIDSearch) {
+    //         accountObject.coinbaseAccountId = coinBaseAccounts[i].id;
+    //     }
+    // }
 
+    //Gets the account IDs for the product pairs in the portfolio
     const accounts = await authedClient.getAccounts();
 
     for (let i = 0; i < accounts.length; ++i) {
@@ -144,6 +149,17 @@ async function getAccountIDs() {
             accountObject.usdAccountId = accounts[i].id;
         } else if (accounts[i].currency === "BTC") {
             accountObject.btcAccountId = accounts[i].id;
+        }
+    }
+    
+    //Gets all the profiles belonging to the user and matches the deposit and trading profile IDs
+    const profiles = await coinbaseLibObject.getProfiles();
+
+    for (let i = 0; i < profiles.length; ++i) {
+        if (profiles[i].name === depositProfileName) {
+            accountObject.depositProfileID = profiles[i].id;
+        } else if (profiles[i].name === tradingProfileName) {
+            accountObject.tradeProfileID = profiles[i].id;
         }
     }
 
@@ -154,7 +170,7 @@ async function getAccountIDs() {
 *   Starts the bot trading
 *   Entry point of program
 */
-async function mainLoop() {
+async function momentumStrategy() {
     let accountIDs = {};
     let lastPeakPrice;
     let lastValleyPrice;
@@ -185,7 +201,7 @@ async function mainLoop() {
                 if (btcAccount.available > 0) {
                     lastPeakPrice = currentPrice;
                     lastValleyPrice = currentPrice;
-                    await losePosition(parseFloat(btcAccount.available), lastPeakPrice, lastValleyPrice, accountIDs.coinbaseAccountId, updatedPositionInfo);
+                    await losePosition(parseFloat(btcAccount.available), lastPeakPrice, lastValleyPrice, accountIDs, updatedPositionInfo);
                 } else {
                     throw new Error("Error, there is no btc balance available for use. Terminating program.");
                 }
@@ -215,40 +231,20 @@ async function mainLoop() {
     }
 }
 
-mainLoop(); //begin
+//momentumStrategy(); //begin
 
 
 // Used for testing: 
 
-// async function test() {
-//     try {
-//         let tradeProfileID;
-//         let depositProfileID;
-        
-//         let coinbaseLibObject = new coinbaseProLib(key, secret, passphrase, apiURI);
-//         const result = await coinbaseLibObject.getProfiles();
-        
-//         console.log(result);
+async function test() {
+    try {
+        console.log("yo mom");
+        //const transferResult = await coinbaseLibObject.profileTransfer(tradeProfileID, depositProfileID, "USD", "1");
+    } catch(err) {
+        const message = "Error in test method";
+        const errorMsg = new Error(err);
+        console.log({ message, errorMsg, err });
+    }
+}
 
-//         for (let i = 0; i < result.length; ++i) {
-//             if (result[i].name === depositProfileName) {
-//                 depositProfileID = result[i].id;
-//             } else if (result[i].name === tradingProfileName) {
-//                 tradeProfileID = result[i].id;
-//             }
-//         }
-
-//         console.log("dep: " + depositProfileID + " trade " + tradeProfileID); 
-
-//         const transferResult = await coinbaseLibObject.profileTransfer(tradeProfileID, depositProfileID, "BTC", "0.0001222");
-
-//         console.log(transferResult);
-
-//     } catch(err) {
-//         const message = "Error in test method";
-//         const errorMsg = new Error(err);
-//         console.log({ message, errorMsg, err });
-//     }
-// }
-
-// test();
+test();

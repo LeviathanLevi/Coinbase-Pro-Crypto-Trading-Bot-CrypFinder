@@ -9,8 +9,15 @@ function sleep(ms) {
 
 /**
  * Place a limit order to sell the btc, loop until the order goes through successfully or cancel it and try again if it doesn't.
+ * 
+ * @param {*} btcSize 
+ * @param {*} accountIds 
+ * @param {*} updatedPositionInfo 
+ * @param {*} currentPrice 
+ * @param {*} orderPriceDelta 
+ * @param {*} authedClient 
  */
-async function sellPosition(btcSize, coinbaseAccountId, updatedPositionInfo, currentPrice, orderPriceDelta, authedClient) {
+async function sellPosition(btcSize, accountIds, updatedPositionInfo, currentPrice, orderPriceDelta, authedClient, coinbaseLibObject) {
     const priceToSell = currentPrice - (currentPrice * orderPriceDelta);
 
     const orderParams = {
@@ -36,15 +43,13 @@ async function sellPosition(btcSize, coinbaseAccountId, updatedPositionInfo, cur
                 let profit = parseFloat(orderDetails.executed_value) - parseFloat(orderDetails.fill_fees) - updatedPositionInfo.positionAcquiredCost;
 
                 if (profit > 0) {
-                    const transferAmount = profit * .4;
+                    const transferAmount = (profit * .4).toFixed(2);
+                    const currency = "USD";
 
-                    const withdrawParamsUSD = {
-                        amount: transferAmount.toFixed(2),
-                        currency: "USD",
-                        coinbase_account_id: coinbaseAccountId,
-                    };
-
-                    await authedClient.withdraw(withdrawParamsUSD);
+                    //transfer funds to depositProfileID
+                    const transferResult = await coinbaseLibObject.profileTransfer(accountIds.tradeProfileID, accountIds.depositProfileID, currency, transferAmount);
+                    
+                    console.log(transferResult);
                 } else {
                     throw new Error("Sell was not profitable, terminating program. profit: " + profit);
                 }
