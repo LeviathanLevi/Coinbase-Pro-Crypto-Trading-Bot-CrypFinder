@@ -191,6 +191,7 @@ async function momentumStrategy() {
     //activate websocket for price data:
     listenForPriceUpdates();
     await sleep(5000);
+    console.log(`Starting price of ${product1} in ${product2} is: ${currentPrice}`);
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
