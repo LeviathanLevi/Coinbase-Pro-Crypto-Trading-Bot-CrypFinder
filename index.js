@@ -18,9 +18,9 @@ const apiURI = "https://api-public.sandbox.pro.coinbase.com";
 const websocketURI = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 
 //Global constants, consider tuning these values to optimize the bot's trading: 
-const sellPositionProfitDelta = .01; //Minimum amount of money needed to be made before selling position
-const sellPositionDelta = .0030; //The amount of change between peak and valley to trigger a sell off
-const buyPositionDelta = .0030; //The amount of change between the peak and valley price to trigger a buy in
+const sellPositionProfitDelta = .01; //Minimum amount of money needed to be made before selling position the program will account for taker and maker fees as well
+const sellPositionDelta = .005; //The amount of change between peak and valley to trigger a sell off
+const buyPositionDelta = .005; //The amount of change between the peak and valley price to trigger a buy in
 const orderPriceDelta = .0015; //The amount of extra room to give the sell/buy orders to go through
 const takerFee = .005; //Orders that provide liquidity are maker orders, subject to maker fees
 const makerFee = .005; //Orders that take liquidity are taker orders, subject to taker fees
@@ -48,7 +48,7 @@ const websocket = new CoinbasePro.WebsocketClient(
     { channels: ["ticker"] }
 );
  
-//authedClient used to make all of the API calls
+//authedClient used to the API calls supported by the coinbase pro api node library
 const authedClient = new CoinbasePro.AuthenticatedClient(
   key,
   secret,
@@ -56,13 +56,13 @@ const authedClient = new CoinbasePro.AuthenticatedClient(
   apiURI
 );
 
-//Custom coinbase library creation:
+//Custom coinbase library used for making the calls not supported by the coinbase pro api node library
 const coinbaseLibObject = new coinbaseProLib(key, secret, passphrase, apiURI);
 
 //Global variable tracks the currentPrice. Updated by the websocket
 let currentPrice;
 
-//Waits to give the websocket time to update
+//Makes the program sleep to avoid hitting API limits and like the websocket update
 function sleep(ms) {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
@@ -172,68 +172,76 @@ async function getAccountIDs() {
 *   Entry point of program
 */
 async function momentumStrategy() {
-    let accountIDs = {};
-    let lastPeakPrice;
-    let lastValleyPrice;
-    let updatedPositionInfo = {
-        positionExists: false,
-    };
-
     try {
+        let accountIDs = {};
+        let lastPeakPrice;
+        let lastValleyPrice;
+        let updatedPositionInfo = {
+            positionExists: false,
+        };
+
         //Retrieve account IDs:
         accountIDs = await getAccountIDs();
-    } catch (err) {
-        console.log("Could not retrieve account IDs");
-        console.log(err);
-        process.exit(1);
-    }
+        
+        console.log(accountIDs)
 
-    //activate websocket for price data:
-    listenForPriceUpdates();
-    await sleep(5000);
-    console.log(`Starting price of ${product1} in ${product2} is: ${currentPrice}`);
+        //activate websocket for price data:
+        listenForPriceUpdates();
+        await sleep(60000);
+        console.log(`Starting price of ${product1} in ${product2} is: ${currentPrice}`);
 
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-        if (updatedPositionInfo.positionExists) {
-            try {
-                await sleep(2000);
-                const product1Account = await authedClient.getAccount(accountIDs.product1AccountID);
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+            if (updatedPositionInfo.positionExists) {
+                try {
+                    await sleep(2000);
+                    const product1Account = await authedClient.getAccount(accountIDs.product1AccountID);
 
-                if (product1Account.available > 0) {
-                    console.log("Entering lose position with: " + product1Account.available + " " + product1);
+                    if (product1Account.available > 0) {
+                        console.log("Entering lose position with: " + product1Account.available + " " + product1);
 
-                    lastPeakPrice = currentPrice;
-                    lastValleyPrice = currentPrice;
-                    await losePosition(parseFloat(product1Account.available), lastPeakPrice, lastValleyPrice, accountIDs, updatedPositionInfo);
-                } else {
-                    throw new Error("Error, there is no btc balance available for use. Terminating program.");
+                        lastPeakPrice = currentPrice;
+                        lastValleyPrice = currentPrice;
+
+                        await losePosition(parseFloat(product1Account.available), lastPeakPrice, lastValleyPrice, accountIDs, updatedPositionInfo);
+                    } else {
+                        throw new Error("Error, there is no btc balance available for use. Terminating program.");
+                    }
+
+                } catch (err) {
+                    const message = "Error occured when positionExists equals true";
+                    const errorMsg = new Error(err);
+                    console.log({ message, errorMsg, err });
+                    process.exit(1);
                 }
+            } else {
+                try {
+                    await sleep(2000);
+                    const product2Account = await authedClient.getAccount(accountIDs.product2AccountID);
 
-            } catch (err) {
-                console.log(err);
-                process.exit(1);
-            }
-        } else {
-            try {
-                await sleep(2000);
-                const product2Account = await authedClient.getAccount(accountIDs.product2AccountID);
+                    if (product2Account.available > 0) {
+                        console.log("Entering gain position with: " + product2Account.available + " " + product2);
 
-                if (product2Account.available > 0) {
-                    console.log("Entering gain position with: " + product2Account.available + " " + product2);
+                        lastPeakPrice = currentPrice;
+                        lastValleyPrice = currentPrice;
 
-                    lastPeakPrice = currentPrice;
-                    lastValleyPrice = currentPrice;
-                    await gainPosition(parseFloat(product2Account.available), lastPeakPrice, lastValleyPrice, updatedPositionInfo);
-                } else {
-                    throw new Error("Error, there is no available usd balance. Terminating program.");
+                        await gainPosition(parseFloat(product2Account.available), lastPeakPrice, lastValleyPrice, updatedPositionInfo);
+                    } else {
+                        throw new Error("Error, there is no available usd balance. Terminating program.");
+                    }
+
+                } catch (err) {
+                    const message = "Error occured when positionExists equals false";
+                    const errorMsg = new Error(err);
+                    console.log({ message, errorMsg, err });
+                    process.exit(1);
                 }
-
-            } catch (err) {
-                console.log(err);
-                process.exit(1);
             }
         }
+    } catch (err) {
+        const message = "Error occured in momentumStrategy method.";
+        const errorMsg = new Error(err);
+        console.log({ message, errorMsg, err });
     }
 }
 
