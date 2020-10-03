@@ -49,4 +49,4 @@ When you're confident in the code base and want to run it in the real enviornmen
 - Testing 
 
 ## Contributors:
-Levi Leuthold - Creator, feel free to contact me (use GitHub) for help or more information
+Levi Leuthold - Creator, feel free to contact me (https://github.com/LeviathanLevi) for help on getting started or more information 
