@@ -1,5 +1,7 @@
 /**
  * Halts the program from running temporarily to prevent it from hitting API call limits
+ * 
+ * @param {number} ms -> the number of miliseconds to wait 
  */
 function sleep(ms) {
     return new Promise((resolve) => {
@@ -8,7 +10,6 @@ function sleep(ms) {
 } 
 
 /**
- * Place a limit order to sell the btc, loop until the order goes through successfully or cancel it and try again if it doesn't.
  * 
  * @param {*} btcSize 
  * @param {*} accountIds 
@@ -16,15 +17,18 @@ function sleep(ms) {
  * @param {*} currentPrice 
  * @param {*} orderPriceDelta 
  * @param {*} authedClient 
+ * @param {*} coinbaseLibObject 
+ * @param {*} productPair 
+ * @param {*} product2 
  */
-async function sellPosition(btcSize, accountIds, updatedPositionInfo, currentPrice, orderPriceDelta, authedClient, coinbaseLibObject) {
+async function sellPosition(btcSize, accountIds, updatedPositionInfo, currentPrice, orderPriceDelta, authedClient, coinbaseLibObject, productPair, product2) {
     const priceToSell = currentPrice - (currentPrice * orderPriceDelta);
 
     const orderParams = {
         side: "sell",
         price: priceToSell.toFixed(2), 
         size: btcSize.toFixed(8),
-        product_id: "BTC-USD",
+        product_id: productPair,
     };
 
     const order = await authedClient.placeOrder(orderParams);
@@ -44,7 +48,7 @@ async function sellPosition(btcSize, accountIds, updatedPositionInfo, currentPri
 
                 if (profit > 0) {
                     const transferAmount = (profit * .4).toFixed(2);
-                    const currency = "USD";
+                    const currency = product2;
 
                     //transfer funds to depositProfileID
                     const transferResult = await coinbaseLibObject.profileTransfer(accountIds.tradeProfileID, accountIds.depositProfileID, currency, transferAmount);
@@ -66,9 +70,16 @@ async function sellPosition(btcSize, accountIds, updatedPositionInfo, currentPri
 }
 
 /**
- * Attempt to buy a position with a limit order, loop until the order goes through successfully or cancel it and try again if it doesn't.
+ * 
+ * @param {*} usdBalance 
+ * @param {*} updatedPositionInfo 
+ * @param {*} takerFee 
+ * @param {*} currentPrice 
+ * @param {*} orderPriceDelta 
+ * @param {*} authedClient 
+ * @param {*} productPair 
  */
-async function buyPosition(usdBalance, updatedPositionInfo, takerFee, currentPrice, orderPriceDelta, authedClient) {
+async function buyPosition(usdBalance, updatedPositionInfo, takerFee, currentPrice, orderPriceDelta, authedClient, productPair) {
     const amountToSpend = usdBalance - (usdBalance * takerFee);
     const priceToBuy = currentPrice + (currentPrice * orderPriceDelta);
     const orderSize = amountToSpend / priceToBuy;
@@ -77,7 +88,7 @@ async function buyPosition(usdBalance, updatedPositionInfo, takerFee, currentPri
         side: "buy",
         price: priceToBuy.toFixed(2), 
         size: orderSize.toFixed(8), 
-        product_id: "BTC-USD",
+        product_id: productPair,
     };
 
     const order = await authedClient.placeOrder(orderParams);

@@ -7,7 +7,9 @@ const key = `${process.env.API_KEY}`;
 const secret = `${process.env.API_SECRET}`;
 const passphrase = `${process.env.API_PASSPHRASE}`;
  
-//Real environment (uncomment out if using in the real enviornment WARNING: you can lose real money, use at your own risk.):
+//******************** Configure these values before running the program ******************************************
+
+//Real environment (uncomment out if using in the real enviornment WARNING: you can lose real money, use at your own risk):
 // const apiURI = "https://api.pro.coinbase.com";
 // const websocketURI = "wss://ws-feed.pro.coinbase.com";
 
@@ -15,9 +17,28 @@ const passphrase = `${process.env.API_PASSPHRASE}`;
 const apiURI = "https://api-public.sandbox.pro.coinbase.com";
 const websocketURI = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 
+//Global constants, consider tuning these values to optimize the bot's trading: 
+const sellPositionProfitDelta = .01; //Minimum amount of money needed to be made before selling position
+const sellPositionDelta = .0030; //The amount of change between peak and valley to trigger a sell off
+const buyPositionDelta = .0030; //The amount of change between the peak and valley price to trigger a buy in
+const orderPriceDelta = .0015; //The amount of extra room to give the sell/buy orders to go through
+const takerFee = .005; //Orders that provide liquidity are maker orders, subject to maker fees
+const makerFee = .005; //Orders that take liquidity are taker orders, subject to taker fees
+
+//Product pair pieces the two halves of coinbase product (examples of product pairs: BTC-USD, DASH-BTC, ETH-USDC), example of pieces: XRP-BTC product1 = XRP, product2 = USD: 
+const product1 = "BTC";
+const product2 = "USD";
+const productPair = product1 + "-" + product2;
+
+//Coinbase portfolios (profiles):
+const tradingProfileName = "BTC trader"; //This is the name of the profile you want the bot to trade in
+const depositProfileName = "Profit savings"; //This is the name of the profile you want to deposit some profits to
+
+//*****************************************************************************************************************
+
 // The websocket client provides price updates on the product, refer to the docs for more information
 const websocket = new CoinbasePro.WebsocketClient(
-    ["BTC-USD"],
+    [productPair],
     websocketURI,
     {
         key,
@@ -37,19 +58,6 @@ const authedClient = new CoinbasePro.AuthenticatedClient(
 
 //Custom coinbase library creation:
 const coinbaseLibObject = new coinbaseProLib(key, secret, passphrase, apiURI);
-
-
-//Global constants, consider tuning these values to optimize the bot's trading: 
-const sellPositionProfitDelta = .01; //Minimum amount of money needed to be made before selling position
-const sellPositionDelta = .0030; //The amount of change between peak and valley to trigger a sell off
-const buyPositionDelta = .0030; //The amount of change between the peak and valley price to trigger a buy in
-const orderPriceDelta = .0015; //The amount of extra room to give the sell/buy orders to go through
-const takerFee = .005; //Orders that provide liquidity are maker orders, subject to maker fees
-const makerFee = .005; //Orders that take liquidity are taker orders, subject to taker fees
-
-//Coinbase portfolios (profiles):
-const tradingProfileName = "BTC trader"; //This is the name of the profile you want the bot to trade in
-const depositProfileName = "Profit savings"; //This is the name of the profile you want to deposit some profits to
 
 //Global variable tracks the currentPrice. Updated by the websocket
 let currentPrice;
@@ -81,7 +89,7 @@ function listenForPriceUpdates() {
  * @param {number} btcSize              The amount of BTC being traded with
  * @param {number} lastPeakPrice        Tracks the price highs
  * @param {number} lastValleyPrice      Tracks the price lows
- * @param {object} accountIds    The coinbase account ID associated with the API key used for storing a chunk of the profits in coinbase
+ * @param {object} accountIds           The coinbase account ID associated with the API key used for storing a chunk of the profits in coinbase
  * @param {object} updatedPositionInfo  Contains 3 fields, positionExists (bool), positionAcquiredPrice (number), and positionAcquiredCost(number)
 */
 async function losePosition(btcSize, lastPeakPrice, lastValleyPrice,  accountIds, updatedPositionInfo) {
@@ -95,7 +103,8 @@ async function losePosition(btcSize, lastPeakPrice, lastValleyPrice,  accountIds
             lastValleyPrice = currentPrice;
 
             if ((lastValleyPrice < lastPeakPrice - (lastPeakPrice * sellPositionDelta)) && (lastValleyPrice >= (updatedPositionInfo.positionAcquiredPrice + (updatedPositionInfo.positionAcquiredPrice * (sellPositionProfitDelta + makerFee + takerFee))))) {
-                await sellPosition(btcSize, accountIds, updatedPositionInfo, currentPrice, orderPriceDelta, authedClient, coinbaseLibObject);
+                console.log("Attempting to sell position...");
+                await sellPosition(btcSize, accountIds, updatedPositionInfo, currentPrice, orderPriceDelta, authedClient, coinbaseLibObject, productPair, product2);
             }
         }
     }
@@ -116,7 +125,8 @@ async function gainPosition(usdBalance, lastPeakPrice, lastValleyPrice, updatedP
         if (lastPeakPrice < currentPrice) {
             lastPeakPrice = currentPrice;
             if (currentPrice > (lastValleyPrice + (lastValleyPrice * buyPositionDelta))) {
-                await buyPosition(usdBalance, updatedPositionInfo, takerFee, currentPrice, orderPriceDelta, authedClient);
+                console.log("Attempting to buy position...");
+                await buyPosition(usdBalance, updatedPositionInfo, takerFee, currentPrice, orderPriceDelta, authedClient, productPair);
             }
         } else  if (lastValleyPrice > currentPrice) {
             lastPeakPrice = currentPrice;
@@ -131,24 +141,15 @@ async function gainPosition(usdBalance, lastPeakPrice, lastValleyPrice, updatedP
 */
 async function getAccountIDs() {
     let accountObject = {};
-        
-    // old way of transfering profits to coinbase instead of another profile:
-    // const coinBaseAccounts = await authedClient.getCoinbaseAccounts();
     
-    // for (let i = 0; i < coinBaseAccounts.length; ++i) {
-    //     if (coinBaseAccounts[i].name === coinbaseAccountIDSearch) {
-    //         accountObject.coinbaseAccountId = coinBaseAccounts[i].id;
-    //     }
-    // }
-
     //Gets the account IDs for the product pairs in the portfolio
     const accounts = await authedClient.getAccounts();
 
     for (let i = 0; i < accounts.length; ++i) {
-        if (accounts[i].currency === "USD") {
-            accountObject.usdAccountId = accounts[i].id;
-        } else if (accounts[i].currency === "BTC") {
-            accountObject.btcAccountId = accounts[i].id;
+        if (accounts[i].currency === product1) {
+            accountObject.product1AccountID = accounts[i].id;
+        } else if (accounts[i].currency === product2) {
+            accountObject.product2AccountID = accounts[i].id;
         }
     }
     
@@ -196,12 +197,14 @@ async function momentumStrategy() {
         if (updatedPositionInfo.positionExists) {
             try {
                 await sleep(2000);
-                const btcAccount = await authedClient.getAccount(accountIDs.btcAccountId);
+                const product1Account = await authedClient.getAccount(accountIDs.product1AccountID);
 
-                if (btcAccount.available > 0) {
+                if (product1Account.available > 0) {
+                    console.log("Entering lose position with: " + product1Account.available + " " + product1);
+
                     lastPeakPrice = currentPrice;
                     lastValleyPrice = currentPrice;
-                    await losePosition(parseFloat(btcAccount.available), lastPeakPrice, lastValleyPrice, accountIDs, updatedPositionInfo);
+                    await losePosition(parseFloat(product1Account.available), lastPeakPrice, lastValleyPrice, accountIDs, updatedPositionInfo);
                 } else {
                     throw new Error("Error, there is no btc balance available for use. Terminating program.");
                 }
@@ -213,12 +216,14 @@ async function momentumStrategy() {
         } else {
             try {
                 await sleep(2000);
-                const usdAccount = await authedClient.getAccount(accountIDs.usdAccountId);
+                const product2Account = await authedClient.getAccount(accountIDs.product2AccountID);
 
-                if (usdAccount.available > 0) {
+                if (product2Account.available > 0) {
+                    console.log("Entering gain position with: " + product2Account.available + " " + product2);
+
                     lastPeakPrice = currentPrice;
                     lastValleyPrice = currentPrice;
-                    await gainPosition(parseFloat(usdAccount.available), lastPeakPrice, lastValleyPrice, updatedPositionInfo);
+                    await gainPosition(parseFloat(product2Account.available), lastPeakPrice, lastValleyPrice, updatedPositionInfo);
                 } else {
                     throw new Error("Error, there is no available usd balance. Terminating program.");
                 }
@@ -231,20 +236,4 @@ async function momentumStrategy() {
     }
 }
 
-//momentumStrategy(); //begin
-
-
-// Used for testing: 
-
-async function test() {
-    try {
-        console.log("yo mom");
-        //const transferResult = await coinbaseLibObject.profileTransfer(tradeProfileID, depositProfileID, "USD", "1");
-    } catch(err) {
-        const message = "Error in test method";
-        const errorMsg = new Error(err);
-        console.log({ message, errorMsg, err });
-    }
-}
-
-test();
+momentumStrategy(); //begin
