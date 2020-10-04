@@ -25,28 +25,15 @@ const orderPriceDelta = .0015; //The amount of extra room to give the sell/buy o
 const takerFee = .005; //Orders that provide liquidity are maker orders, subject to maker fees
 const makerFee = .005; //Orders that take liquidity are taker orders, subject to taker fees
 
-//Product pair pieces the two halves of coinbase product (examples of product pairs: BTC-USD, DASH-BTC, ETH-USDC), example of pieces: XRP-BTC product1 = XRP, product2 = USD: 
-const product1 = "BTC";
-const product2 = "USD";
-const productPair = product1 + "-" + product2;
+//The pieces of the product pair, this is the two halves of coinbase product pair (examples of product pairs: BTC-USD, DASH-BTC, ETH-USDC). For BTC-USD the base currency is BTC and the quote currency is USD 
+const baseCurrencyName = "BTC";
+const quoteCurrencyName = "USD";
 
 //Coinbase portfolios (profiles):
 const tradingProfileName = "BTC trader"; //This is the name of the profile you want the bot to trade in
 const depositProfileName = "Profit savings"; //This is the name of the profile you want to deposit some profits to
 
 //*****************************************************************************************************************
-
-// The websocket client provides price updates on the product, refer to the docs for more information
-const websocket = new CoinbasePro.WebsocketClient(
-    [productPair],
-    websocketURI,
-    {
-        key,
-        secret,
-        passphrase,
-    },
-    { channels: ["ticker"] }
-);
  
 //authedClient used to the API calls supported by the coinbase pro api node library
 const authedClient = new CoinbasePro.AuthenticatedClient(
@@ -69,8 +56,24 @@ function sleep(ms) {
     });
 }   
 
-//Activates the websocket to start listening for price changes
-function listenForPriceUpdates() {
+/**
+ * Creates the websocket object and turns it on to update the currentPrice
+ * 
+ * @param {string} productPair 
+ */
+function listenForPriceUpdates(productPair) {
+    // The websocket client provides price updates on the product, refer to the docs for more information
+    const websocket = new CoinbasePro.WebsocketClient(
+        [productPair],
+        websocketURI,
+        {
+            key,
+            secret,
+            passphrase,
+        },
+        { channels: ["ticker"] }
+    );
+
     websocket.on("message", function(data) {
         if (data.type === "ticker") {
             currentPrice = parseFloat(data.price);
@@ -78,7 +81,9 @@ function listenForPriceUpdates() {
     });
 
     websocket.on("error", err => {
-        console.log(err);
+        const message = "Error occured in the websocket.";
+        const errorMsg = new Error(err);
+        console.log({ message, errorMsg, err });
         process.exit(1);
     });
 }
@@ -86,13 +91,13 @@ function listenForPriceUpdates() {
 /** 
  * Loops forever until the conditions are right to attempt to sell the position
  * 
- * @param {number} size                 The amount of currency being traded with
+ * @param {number} balance              The amount of currency being traded with
  * @param {number} lastPeakPrice        Tracks the price highs
  * @param {number} lastValleyPrice      Tracks the price lows
  * @param {object} accountIds           The coinbase account ID associated with the API key used for storing a chunk of the profits in coinbase
  * @param {object} updatedPositionInfo  Contains 3 fields, positionExists (bool), positionAcquiredPrice (number), and positionAcquiredCost(number)
 */
-async function losePosition(size, lastPeakPrice, lastValleyPrice,  accountIds, updatedPositionInfo) {
+async function losePosition(balance, lastPeakPrice, lastValleyPrice,  accountIds, updatedPositionInfo, productInfo) {
     while (updatedPositionInfo.positionExists === true) {
         await sleep(2000);
 
@@ -104,7 +109,7 @@ async function losePosition(size, lastPeakPrice, lastValleyPrice,  accountIds, u
 
             if ((lastValleyPrice < lastPeakPrice - (lastPeakPrice * sellPositionDelta)) && (lastValleyPrice >= (updatedPositionInfo.positionAcquiredPrice + (updatedPositionInfo.positionAcquiredPrice * (sellPositionProfitDelta + makerFee + takerFee))))) {
                 console.log("Attempting to sell position...");
-                await sellPosition(size, accountIds, updatedPositionInfo, currentPrice, orderPriceDelta, authedClient, coinbaseLibObject, productPair, product2);
+                await sellPosition(balance, accountIds, updatedPositionInfo, currentPrice, orderPriceDelta, authedClient, coinbaseLibObject, productInfo);
             }
         }
     }
@@ -113,12 +118,12 @@ async function losePosition(size, lastPeakPrice, lastValleyPrice,  accountIds, u
 /** 
  * Loops forever until the conditions are right to attempt to buy the position
  * 
- * @param {number} usdBalance           The amount of USD being traded with
+ * @param {number} balance              The amount of currency being traded with
  * @param {number} lastPeakPrice        Tracks the price highs
  * @param {number} lastValleyPrice      Tracks the price lows
  * @param {object} updatedPositionInfo  Contains 3 fields, positionExists (bool), positionAcquiredPrice (number), and positionAcquiredCost(number)
 */
-async function gainPosition(usdBalance, lastPeakPrice, lastValleyPrice, updatedPositionInfo) {
+async function gainPosition(balance, lastPeakPrice, lastValleyPrice, updatedPositionInfo, productInfo) {
     while (updatedPositionInfo.positionExists === false) {
         await sleep(2000);
         
@@ -126,7 +131,7 @@ async function gainPosition(usdBalance, lastPeakPrice, lastValleyPrice, updatedP
             lastPeakPrice = currentPrice;
             if (currentPrice > (lastValleyPrice + (lastValleyPrice * buyPositionDelta))) {
                 console.log("Attempting to buy position...");
-                await buyPosition(usdBalance, updatedPositionInfo, takerFee, currentPrice, orderPriceDelta, authedClient, productPair);
+                await buyPosition(balance, updatedPositionInfo, takerFee, currentPrice, orderPriceDelta, authedClient, productInfo);
             }
         } else  if (lastValleyPrice > currentPrice) {
             lastPeakPrice = currentPrice;
@@ -139,17 +144,17 @@ async function gainPosition(usdBalance, lastPeakPrice, lastValleyPrice, updatedP
  * Acquires some account ID information to be used for storing and retrieving information
  * and depositing funds after a sell.
 */
-async function getAccountIDs() {
+async function getAccountIDs(productInfo) {
     let accountObject = {};
     
     //Gets the account IDs for the product pairs in the portfolio
     const accounts = await authedClient.getAccounts();
 
     for (let i = 0; i < accounts.length; ++i) {
-        if (accounts[i].currency === product1) {
-            accountObject.product1AccountID = accounts[i].id;
-        } else if (accounts[i].currency === product2) {
-            accountObject.product2AccountID = accounts[i].id;
+        if (accounts[i].currency === productInfo.baseCurrency) {
+            accountObject.baseCurrencyAccountID = accounts[i].id;
+        } else if (accounts[i].currency === productInfo.quoteCurrency) {
+            accountObject.quoteCurrencyAccountID = accounts[i].id;
         }
     }
     
@@ -167,6 +172,59 @@ async function getAccountIDs() {
     return accountObject;
 }
 
+/**
+ * Gets information about the product being traded that the bot can use to determine how
+ * accurate the size and quote values for the order needs to be.
+ * 
+ * @param {object} productInfo 
+ */
+async function getProductInfo(productInfo) {
+    try {
+        let quoteIncrementRoundValue = 0;
+        let baseIncrementRoundValue = 0;
+        let productPairData;
+
+        const products = await authedClient.getProducts();
+
+        for (let i = 0; i < products.length; ++i) { 
+            if (products[i].id === productInfo.productPair) {
+                productPairData = products[i];
+            }
+        }
+        
+        if (productPairData === undefined) {
+            throw new Error(`Error, could not find a valid matching product pair for "${productInfo.productPair}". Verify the name is correct.`);
+        }
+
+        for (let i = 2; i < productPairData.quote_increment.length; ++i) {
+            if (productPairData.quote_increment[i] === "1") {
+                quoteIncrementRoundValue++;
+                break;
+            } else {
+                quoteIncrementRoundValue++;
+            }
+        }
+
+        if (productPairData.base_increment[0] !== "1") {
+            for (let i = 2; i < productPairData.base_increment.length; ++i) {
+                if (productPairData.base_increment[i] === "1") {
+                    baseIncrementRoundValue++;
+                    break;
+                } else {
+                    baseIncrementRoundValue++;
+                }
+            }
+        }
+
+        productInfo.quoteIncrementRoundValue = Number(quoteIncrementRoundValue);
+        productInfo.baseIncrementRoundValue = Number(baseIncrementRoundValue);
+    } catch (err) {
+        const message = "Error occured in getProfuctInfo method.";
+        const errorMsg = new Error(err);
+        console.log({ message, errorMsg, err });
+    }
+}
+
 /*
 *   Starts the bot trading
 *   Entry point of program
@@ -179,33 +237,43 @@ async function momentumStrategy() {
         let updatedPositionInfo = {
             positionExists: false,
         };
+        let productInfo = {
+            baseCurrency: baseCurrencyName,
+            quoteCurrency: quoteCurrencyName,
+            productPar: baseCurrencyName + "-" + quoteCurrencyName
+        }
 
         //Retrieve account IDs:
         accountIDs = await getAccountIDs();
         
         console.log(accountIDs)
 
+        //Retrieve product information:
+        await getProductInfo(productInfo);
+
+        console.log(productInfo);
+
         //activate websocket for price data:
         listenForPriceUpdates();
         await sleep(60000);
-        console.log(`Starting price of ${product1} in ${product2} is: ${currentPrice}`);
+        console.log(`Starting price of ${productInfo.baseCurrency} in ${productInfo.quoteCurrency} is: ${currentPrice}`);
 
         // eslint-disable-next-line no-constant-condition
         while (true) {
             if (updatedPositionInfo.positionExists) {
                 try {
                     await sleep(2000);
-                    const product1Account = await authedClient.getAccount(accountIDs.product1AccountID);
+                    const baseCurrencyAccount = await authedClient.getAccount(accountIDs.baseCurrencyAccountID);
 
-                    if (product1Account.available > 0) {
-                        console.log("Entering lose position with: " + product1Account.available + " " + product1);
+                    if (baseCurrencyAccount.available > 0) {
+                        console.log("Entering lose position with: " + baseCurrencyAccount.available + " " + productInfo.baseCurrency);
 
                         lastPeakPrice = currentPrice;
                         lastValleyPrice = currentPrice;
 
-                        await losePosition(parseFloat(product1Account.available), lastPeakPrice, lastValleyPrice, accountIDs, updatedPositionInfo);
+                        await losePosition(parseFloat(baseCurrencyAccount.available), lastPeakPrice, lastValleyPrice, accountIDs, updatedPositionInfo, productInfo);
                     } else {
-                        throw new Error(`Error, there is no ${product1} balance available for use. Terminating program.`);
+                        throw new Error(`Error, there is no ${productInfo.baseCurrency} balance available for use. Terminating program.`);
                     }
 
                 } catch (err) {
@@ -217,17 +285,17 @@ async function momentumStrategy() {
             } else {
                 try {
                     await sleep(2000);
-                    const product2Account = await authedClient.getAccount(accountIDs.product2AccountID);
+                    const quoteCurrencyAccount = await authedClient.getAccount(accountIDs.quoteCurrencyAccountID);
 
-                    if (product2Account.available > 0) {
-                        console.log("Entering gain position with: " + product2Account.available + " " + product2);
+                    if (quoteCurrencyAccount.available > 0) {
+                        console.log("Entering gain position with: " + quoteCurrencyAccount.available + " " + productInfo.quoteCurrency);
 
                         lastPeakPrice = currentPrice;
                         lastValleyPrice = currentPrice;
 
-                        await gainPosition(parseFloat(product2Account.available), lastPeakPrice, lastValleyPrice, updatedPositionInfo);
+                        await gainPosition(parseFloat(quoteCurrencyAccount.available), lastPeakPrice, lastValleyPrice, updatedPositionInfo, productInfo);
                     } else {
-                        throw new Error(`Error, there is no ${product2} balance available for use. Terminating program.`);
+                        throw new Error(`Error, there is no ${productInfo.quoteCurrency} balance available for use. Terminating program.`);
                     }
 
                 } catch (err) {
@@ -246,3 +314,18 @@ async function momentumStrategy() {
 }
 
 momentumStrategy(); //begin
+
+
+
+// async function test() {
+//     let productInfo = {
+//         product1: product1,
+//         product2: product2,
+//         productPair: product1 + "-" + product2
+//     }
+//     console.log(productInfo);
+//     await getProductInfo(productInfo);
+//     console.log(productInfo);
+// }
+
+// test();

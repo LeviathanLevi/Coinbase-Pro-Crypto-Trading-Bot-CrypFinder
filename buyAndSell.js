@@ -11,25 +11,31 @@ function sleep(ms) {
 
 /**
  * 
- * @param {*} size 
+ * @param {*} balance 
  * @param {*} accountIds 
  * @param {*} updatedPositionInfo 
  * @param {*} currentPrice 
  * @param {*} orderPriceDelta 
  * @param {*} authedClient 
  * @param {*} coinbaseLibObject 
- * @param {*} productPair 
- * @param {*} product2 
+ * @param {*} productInfo 
  */
-async function sellPosition(size, accountIds, updatedPositionInfo, currentPrice, orderPriceDelta, authedClient, coinbaseLibObject, productPair, product2) {
+async function sellPosition(balance, accountIds, updatedPositionInfo, currentPrice, orderPriceDelta, authedClient, coinbaseLibObject, productInfo) {
     try {
-        const priceToSell = currentPrice - (currentPrice * orderPriceDelta);
+        const priceToSell = (currentPrice - (currentPrice * orderPriceDelta)).toFixed(productInfo.quoteIncrementRoundValue);
+
+        let orderSize;
+        if (productInfo.baseIncrementRoundValue === 0) {
+            orderSize = Math.trunc(balance / priceToSell);
+        } else {
+            orderSize = (balance / priceToSell).parseFloat(productInfo.baseIncrementRoundValue);
+        }
 
         const orderParams = {
             side: "sell",
             price: priceToSell.toFixed(2), 
-            size: size.toFixed(8),
-            product_id: productPair,
+            size: orderSize,
+            product_id: productInfo.productPair,
         };
 
         console.log("Sell order params: " + orderParams);
@@ -51,7 +57,7 @@ async function sellPosition(size, accountIds, updatedPositionInfo, currentPrice,
 
                     if (profit > 0) {
                         const transferAmount = (profit * .4).toFixed(2);
-                        const currency = product2;
+                        const currency = productInfo.quoteCurrency;
 
                         //transfer funds to depositProfileID
                         const transferResult = await coinbaseLibObject.profileTransfer(accountIds.tradeProfileID, accountIds.depositProfileID, currency, transferAmount);
@@ -79,25 +85,30 @@ async function sellPosition(size, accountIds, updatedPositionInfo, currentPrice,
 
 /**
  * 
- * @param {*} usdBalance 
+ * @param {*} balance 
  * @param {*} updatedPositionInfo 
  * @param {*} takerFee 
  * @param {*} currentPrice 
  * @param {*} orderPriceDelta 
  * @param {*} authedClient 
- * @param {*} productPair 
+ * @param {*} productInfo 
  */
-async function buyPosition(usdBalance, updatedPositionInfo, takerFee, currentPrice, orderPriceDelta, authedClient, productPair) {
+async function buyPosition(balance, updatedPositionInfo, takerFee, currentPrice, orderPriceDelta, authedClient, productInfo) {
     try {
-        const amountToSpend = usdBalance - (usdBalance * takerFee);
-        const priceToBuy = currentPrice + (currentPrice * orderPriceDelta);
-        const orderSize = amountToSpend / priceToBuy;
+        const amountToSpend = balance - (balance * takerFee);
+        const priceToBuy = (currentPrice + (currentPrice * orderPriceDelta)).toFixed(productInfo.quoteIncrementRoundValue);
+        let orderSize;
+        if (productInfo.baseIncrementRoundValue === 0) {
+            orderSize = Math.trunc(amountToSpend / priceToBuy);
+        } else {
+            orderSize = (amountToSpend / priceToBuy).parseFloat(productInfo.baseIncrementRoundValue);
+        }
 
         const orderParams = {
             side: "buy",
-            price: priceToBuy.toFixed(2), 
-            size: orderSize.toFixed(8), 
-            product_id: productPair,
+            price: priceToBuy, 
+            size: orderSize, 
+            product_id: productInfo.productPair,
         };
 
         console.log("Buy order params: " + orderParams);
