@@ -11,7 +11,7 @@ function sleep(ms) {
 
 /**
  * 
- * @param {*} btcSize 
+ * @param {*} size 
  * @param {*} accountIds 
  * @param {*} updatedPositionInfo 
  * @param {*} currentPrice 
@@ -21,17 +21,18 @@ function sleep(ms) {
  * @param {*} productPair 
  * @param {*} product2 
  */
-async function sellPosition(btcSize, accountIds, updatedPositionInfo, currentPrice, orderPriceDelta, authedClient, coinbaseLibObject, productPair, product2) {
+async function sellPosition(size, accountIds, updatedPositionInfo, currentPrice, orderPriceDelta, authedClient, coinbaseLibObject, productPair, product2) {
     try {
         const priceToSell = currentPrice - (currentPrice * orderPriceDelta);
 
         const orderParams = {
             side: "sell",
             price: priceToSell.toFixed(2), 
-            size: btcSize.toFixed(8),
+            size: size.toFixed(8),
             product_id: productPair,
         };
 
+        console.log("Sell order params: " + orderParams);
         const order = await authedClient.placeOrder(orderParams);
         const orderID = order.id;
 
@@ -99,6 +100,7 @@ async function buyPosition(usdBalance, updatedPositionInfo, takerFee, currentPri
             product_id: productPair,
         };
 
+        console.log("Buy order params: " + orderParams);
         const order = await authedClient.placeOrder(orderParams);
         const orderID = order.id;
 
@@ -114,6 +116,8 @@ async function buyPosition(usdBalance, updatedPositionInfo, takerFee, currentPri
                     updatedPositionInfo.positionExists = true;
                     updatedPositionInfo.positionAcquiredPrice = parseFloat(orderDetails.executed_value) / parseFloat(orderDetails.filled_size);
                     updatedPositionInfo.positionAcquiredCost = parseFloat(orderDetails.executed_value)  + parseFloat(orderDetails.fill_fees);
+
+                    console.log(updatedPositionInfo);
                 }
             }
         }

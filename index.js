@@ -86,13 +86,13 @@ function listenForPriceUpdates() {
 /** 
  * Loops forever until the conditions are right to attempt to sell the position
  * 
- * @param {number} btcSize              The amount of BTC being traded with
+ * @param {number} size                 The amount of currency being traded with
  * @param {number} lastPeakPrice        Tracks the price highs
  * @param {number} lastValleyPrice      Tracks the price lows
  * @param {object} accountIds           The coinbase account ID associated with the API key used for storing a chunk of the profits in coinbase
  * @param {object} updatedPositionInfo  Contains 3 fields, positionExists (bool), positionAcquiredPrice (number), and positionAcquiredCost(number)
 */
-async function losePosition(btcSize, lastPeakPrice, lastValleyPrice,  accountIds, updatedPositionInfo) {
+async function losePosition(size, lastPeakPrice, lastValleyPrice,  accountIds, updatedPositionInfo) {
     while (updatedPositionInfo.positionExists === true) {
         await sleep(2000);
 
@@ -104,7 +104,7 @@ async function losePosition(btcSize, lastPeakPrice, lastValleyPrice,  accountIds
 
             if ((lastValleyPrice < lastPeakPrice - (lastPeakPrice * sellPositionDelta)) && (lastValleyPrice >= (updatedPositionInfo.positionAcquiredPrice + (updatedPositionInfo.positionAcquiredPrice * (sellPositionProfitDelta + makerFee + takerFee))))) {
                 console.log("Attempting to sell position...");
-                await sellPosition(btcSize, accountIds, updatedPositionInfo, currentPrice, orderPriceDelta, authedClient, coinbaseLibObject, productPair, product2);
+                await sellPosition(size, accountIds, updatedPositionInfo, currentPrice, orderPriceDelta, authedClient, coinbaseLibObject, productPair, product2);
             }
         }
     }
@@ -205,7 +205,7 @@ async function momentumStrategy() {
 
                         await losePosition(parseFloat(product1Account.available), lastPeakPrice, lastValleyPrice, accountIDs, updatedPositionInfo);
                     } else {
-                        throw new Error("Error, there is no btc balance available for use. Terminating program.");
+                        throw new Error(`Error, there is no ${product1} balance available for use. Terminating program.`);
                     }
 
                 } catch (err) {
@@ -227,7 +227,7 @@ async function momentumStrategy() {
 
                         await gainPosition(parseFloat(product2Account.available), lastPeakPrice, lastValleyPrice, updatedPositionInfo);
                     } else {
-                        throw new Error("Error, there is no available usd balance. Terminating program.");
+                        throw new Error(`Error, there is no ${product2} balance available for use. Terminating program.`);
                     }
 
                 } catch (err) {
