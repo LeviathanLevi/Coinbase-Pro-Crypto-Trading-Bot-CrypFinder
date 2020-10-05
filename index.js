@@ -49,7 +49,7 @@ const coinbaseLibObject = new coinbaseProLib(key, secret, passphrase, apiURI);
 //Global variable tracks the currentPrice. Updated by the websocket
 let currentPrice;
 
-//Makes the program sleep to avoid hitting API limits and like the websocket update
+//Makes the program sleep to avoid hitting API limits and let the websocket update
 function sleep(ms) {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
@@ -62,6 +62,10 @@ function sleep(ms) {
  * @param {string} productPair 
  */
 function listenForPriceUpdates(productPair) {
+    if (productPair == null) {
+        throw new Error("Error in listenForPriceUpdates method. ProductPair is null!");
+    }
+
     // The websocket client provides price updates on the product, refer to the docs for more information
     const websocket = new CoinbasePro.WebsocketClient(
         [productPair],
@@ -74,12 +78,14 @@ function listenForPriceUpdates(productPair) {
         { channels: ["ticker"] }
     );
 
+    //Turn on the websocket for messages
     websocket.on("message", function(data) {
         if (data.type === "ticker") {
             currentPrice = parseFloat(data.price);
         }
     });
 
+    //turn on the websocket for errors
     websocket.on("error", err => {
         const message = "Error occured in the websocket.";
         const errorMsg = new Error(err);
@@ -129,6 +135,7 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, updatedPosi
         
         if (lastPeakPrice < currentPrice) {
             lastPeakPrice = currentPrice;
+
             if (currentPrice > (lastValleyPrice + (lastValleyPrice * buyPositionDelta))) {
                 console.log("Attempting to buy position...");
                 await buyPosition(balance, updatedPositionInfo, takerFee, currentPrice, orderPriceDelta, authedClient, productInfo);
@@ -235,26 +242,25 @@ async function momentumStrategy() {
         let lastPeakPrice;
         let lastValleyPrice;
         let updatedPositionInfo = {
-            positionExists: false,
+            positionExists: false
         };
         let productInfo = {
             baseCurrency: baseCurrencyName,
             quoteCurrency: quoteCurrencyName,
-            productPar: baseCurrencyName + "-" + quoteCurrencyName
+            productPair: baseCurrencyName + "-" + quoteCurrencyName
         }
-
-        //Retrieve account IDs:
-        accountIDs = await getAccountIDs();
-        
-        console.log(accountIDs)
 
         //Retrieve product information:
         await getProductInfo(productInfo);
-
         console.log(productInfo);
+        
+        //Retrieve account IDs:
+        accountIDs = await getAccountIDs(productInfo);
+        console.log(accountIDs)
 
         //activate websocket for price data:
-        listenForPriceUpdates();
+        listenForPriceUpdates(productInfo.productPair);
+
         await sleep(60000);
         console.log(`Starting price of ${productInfo.baseCurrency} in ${productInfo.quoteCurrency} is: ${currentPrice}`);
 
@@ -314,18 +320,3 @@ async function momentumStrategy() {
 }
 
 momentumStrategy(); //begin
-
-
-
-// async function test() {
-//     let productInfo = {
-//         product1: product1,
-//         product2: product2,
-//         productPair: product1 + "-" + product2
-//     }
-//     console.log(productInfo);
-//     await getProductInfo(productInfo);
-//     console.log(productInfo);
-// }
-
-// test();
