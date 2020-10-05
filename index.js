@@ -34,6 +34,10 @@ const tradingProfileName = "BTC trader"; //This is the name of the profile you w
 const depositProfileName = "Profit savings"; //This is the name of the profile you want to deposit some profits to
 
 //*****************************************************************************************************************
+
+//     Due to rounding errors the buy order may not have enough funds to execute the order. This is the minimum funds amount that
+// will be left in usd account to avoid this error. 
+const balanceMinimum = .005; 
  
 //authedClient used to the API calls supported by the coinbase pro api node library
 const authedClient = new CoinbasePro.AuthenticatedClient(
@@ -292,14 +296,17 @@ async function momentumStrategy() {
                 try {
                     await sleep(2000);
                     const quoteCurrencyAccount = await authedClient.getAccount(accountIDs.quoteCurrencyAccountID);
+                    const availableBalance = parseFloat(quoteCurrencyAccount.available);
 
-                    if (quoteCurrencyAccount.available > 0) {
-                        console.log("Entering gain position with: " + quoteCurrencyAccount.available + " " + productInfo.quoteCurrency);
+                    if (availableBalance > 0) {
+                        const tradeBalance = availableBalance - (availableBalance * balanceMinimum);
+
+                        console.log("Entering gain position with: " + tradeBalance + " " + productInfo.quoteCurrency);
 
                         lastPeakPrice = currentPrice;
                         lastValleyPrice = currentPrice;
 
-                        await gainPosition(parseFloat(quoteCurrencyAccount.available), lastPeakPrice, lastValleyPrice, updatedPositionInfo, productInfo);
+                        await gainPosition(tradeBalance, lastPeakPrice, lastValleyPrice, updatedPositionInfo, productInfo);
                     } else {
                         throw new Error(`Error, there is no ${productInfo.quoteCurrency} balance available for use. Terminating program.`);
                     }
