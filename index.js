@@ -21,7 +21,7 @@ const websocketURI = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 const sellPositionProfitDelta = .01; //Minimum amount of money needed to be made before selling position the program will account for taker and maker fees as well
 const sellPositionDelta = .005; //The amount of change between peak and valley to trigger a sell off
 const buyPositionDelta = .005; //The amount of change between the peak and valley price to trigger a buy in
-const orderPriceDelta = .0015; //The amount of extra room to give the sell/buy orders to go through
+const orderPriceDelta = .001; //The amount of extra room to give the sell/buy orders to go through
 const takerFee = .005; //Orders that provide liquidity are maker orders, subject to maker fees
 const makerFee = .005; //Orders that take liquidity are taker orders, subject to taker fees
 
@@ -35,7 +35,7 @@ const depositProfileName = "Profit savings"; //This is the name of the profile y
 
 //*****************************************************************************************************************
 
-//     Due to rounding errors the buy order may not have enough funds to execute the order. This is the minimum funds amount that
+// Due to rounding errors the buy order may not have enough funds to execute the order. This is the minimum funds amount that
 // will be left in usd account to avoid this error. 
 const balanceMinimum = .005; 
  
@@ -85,6 +85,9 @@ function listenForPriceUpdates(productPair) {
     //Turn on the websocket for messages
     websocket.on("message", function(data) {
         if (data.type === "ticker") {
+            if (currentPrice != data.price) {
+                console.log(currentPrice);
+            }
             currentPrice = parseFloat(data.price);
         }
     });
@@ -108,20 +111,33 @@ function listenForPriceUpdates(productPair) {
  * @param {object} updatedPositionInfo  Contains 3 fields, positionExists (bool), positionAcquiredPrice (number), and positionAcquiredCost(number)
 */
 async function losePosition(balance, lastPeakPrice, lastValleyPrice,  accountIds, updatedPositionInfo, productInfo) {
-    while (updatedPositionInfo.positionExists === true) {
-        await sleep(2000);
-
-        if (lastPeakPrice < currentPrice) {
-            lastPeakPrice = currentPrice;
-            lastValleyPrice = currentPrice;
-        } else if (lastValleyPrice > currentPrice) {
-            lastValleyPrice = currentPrice;
-
-            if ((lastValleyPrice < lastPeakPrice - (lastPeakPrice * sellPositionDelta)) && (lastValleyPrice >= (updatedPositionInfo.positionAcquiredPrice + (updatedPositionInfo.positionAcquiredPrice * (sellPositionProfitDelta + makerFee + takerFee))))) {
-                console.log("Attempting to sell position...");
-                await sellPosition(balance, accountIds, updatedPositionInfo, currentPrice, orderPriceDelta, authedClient, coinbaseLibObject, productInfo);
+    try {
+        while (updatedPositionInfo.positionExists === true) {
+            await sleep(250);
+    
+            if (lastPeakPrice < currentPrice) {
+                lastPeakPrice = currentPrice;
+                lastValleyPrice = currentPrice;
+    
+                console.log(`Sell Position, LPP: ${lastPeakPrice}`);
+            } else if (lastValleyPrice > currentPrice) {
+                lastValleyPrice = currentPrice;
+    
+                const target = lastPeakPrice - (lastPeakPrice * sellPositionDelta);
+                const minimum = updatedPositionInfo.positionAcquiredPrice + (updatedPositionInfo.positionAcquiredPrice * (sellPositionProfitDelta + makerFee + takerFee));
+    
+                console.log(`Sell Position, LVP: ${lastValleyPrice} needs to be less than or equal to ${target} and greater than or equal to ${minimum} to sell`);
+    
+                if ((lastValleyPrice <= target) && (lastValleyPrice >= minimum)) {
+                    console.log("Attempting to sell position...");
+                    await sellPosition(balance, accountIds, updatedPositionInfo, lastPeakPrice, orderPriceDelta, authedClient, coinbaseLibObject, productInfo);
+                }
             }
         }
+    } catch (err) {
+        const message = "Error occured in losePosition method.";
+        const errorMsg = new Error(err);
+        console.log({ message, errorMsg, err });
     }
 }
 
@@ -134,20 +150,32 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice,  accountIds
  * @param {object} updatedPositionInfo  Contains 3 fields, positionExists (bool), positionAcquiredPrice (number), and positionAcquiredCost(number)
 */
 async function gainPosition(balance, lastPeakPrice, lastValleyPrice, updatedPositionInfo, productInfo) {
-    while (updatedPositionInfo.positionExists === false) {
-        await sleep(2000);
-        
-        if (lastPeakPrice < currentPrice) {
-            lastPeakPrice = currentPrice;
-
-            if (currentPrice > (lastValleyPrice + (lastValleyPrice * buyPositionDelta))) {
-                console.log("Attempting to buy position...");
-                await buyPosition(balance, updatedPositionInfo, takerFee, currentPrice, orderPriceDelta, authedClient, productInfo);
+    try {
+        while (updatedPositionInfo.positionExists === false) {
+            await sleep(250);
+            
+            if (lastPeakPrice < currentPrice) {
+                lastPeakPrice = currentPrice;
+    
+                const target = lastValleyPrice + (lastValleyPrice * buyPositionDelta);
+    
+                console.log(`Buy Position, LPP: ${lastPeakPrice} needs to be greater than or equal to ${target} to buy`);
+    
+                if (lastPeakPrice >= target) {
+                    console.log("Attempting to buy position...");
+                    await buyPosition(balance, updatedPositionInfo, takerFee, lastPeakPrice, orderPriceDelta, authedClient, productInfo);
+                }
+            } else  if (lastValleyPrice > currentPrice) {
+                lastPeakPrice = currentPrice;
+                lastValleyPrice = currentPrice;
+    
+                console.log(`Buy Position, LVP: ${lastValleyPrice}`);
             }
-        } else  if (lastValleyPrice > currentPrice) {
-            lastPeakPrice = currentPrice;
-            lastValleyPrice = currentPrice;
         }
+    } catch (err) {
+        const message = "Error occured in gainPosition method.";
+        const errorMsg = new Error(err);
+        console.log({ message, errorMsg, err });
     }
 }
 
@@ -156,31 +184,37 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, updatedPosi
  * and depositing funds after a sell.
 */
 async function getAccountIDs(productInfo) {
-    let accountObject = {};
+    try {
+        let accountObject = {};
     
-    //Gets the account IDs for the product pairs in the portfolio
-    const accounts = await authedClient.getAccounts();
+        //Gets the account IDs for the product pairs in the portfolio
+        const accounts = await authedClient.getAccounts();
 
-    for (let i = 0; i < accounts.length; ++i) {
-        if (accounts[i].currency === productInfo.baseCurrency) {
-            accountObject.baseCurrencyAccountID = accounts[i].id;
-        } else if (accounts[i].currency === productInfo.quoteCurrency) {
-            accountObject.quoteCurrencyAccountID = accounts[i].id;
+        for (let i = 0; i < accounts.length; ++i) {
+            if (accounts[i].currency === productInfo.baseCurrency) {
+                accountObject.baseCurrencyAccountID = accounts[i].id;
+            } else if (accounts[i].currency === productInfo.quoteCurrency) {
+                accountObject.quoteCurrencyAccountID = accounts[i].id;
+            }
         }
-    }
-    
-    //Gets all the profiles belonging to the user and matches the deposit and trading profile IDs
-    const profiles = await coinbaseLibObject.getProfiles();
+        
+        //Gets all the profiles belonging to the user and matches the deposit and trading profile IDs
+        const profiles = await coinbaseLibObject.getProfiles();
 
-    for (let i = 0; i < profiles.length; ++i) {
-        if (profiles[i].name === depositProfileName) {
-            accountObject.depositProfileID = profiles[i].id;
-        } else if (profiles[i].name === tradingProfileName) {
-            accountObject.tradeProfileID = profiles[i].id;
+        for (let i = 0; i < profiles.length; ++i) {
+            if (profiles[i].name === depositProfileName) {
+                accountObject.depositProfileID = profiles[i].id;
+            } else if (profiles[i].name === tradingProfileName) {
+                accountObject.tradeProfileID = profiles[i].id;
+            }
         }
-    }
 
-    return accountObject;
+        return accountObject;
+    } catch (err) {
+        const message = "Error occured in getAccountIDs method.";
+        const errorMsg = new Error(err);
+        console.log({ message, errorMsg, err });
+    }
 }
 
 /**
@@ -272,7 +306,7 @@ async function momentumStrategy() {
         while (true) {
             if (updatedPositionInfo.positionExists) {
                 try {
-                    await sleep(2000);
+                    await sleep(1000);
                     const baseCurrencyAccount = await authedClient.getAccount(accountIDs.baseCurrencyAccountID);
 
                     if (baseCurrencyAccount.available > 0) {
@@ -294,7 +328,7 @@ async function momentumStrategy() {
                 }
             } else {
                 try {
-                    await sleep(2000);
+                    await sleep(1000);
                     const quoteCurrencyAccount = await authedClient.getAccount(accountIDs.quoteCurrencyAccountID);
                     const availableBalance = parseFloat(quoteCurrencyAccount.available);
 

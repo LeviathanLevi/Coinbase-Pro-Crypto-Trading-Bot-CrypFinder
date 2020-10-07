@@ -39,6 +39,7 @@ async function sellPosition(balance, accountIds, updatedPositionInfo, currentPri
         };
 
         console.log("Sell order params: " + JSON.stringify(orderParams));
+
         const order = await authedClient.placeOrder(orderParams);
         const orderID = order.id;
 
@@ -98,6 +99,7 @@ async function buyPosition(balance, updatedPositionInfo, takerFee, currentPrice,
         const amountToSpend = balance - (balance * takerFee);
         const priceToBuy = (currentPrice + (currentPrice * orderPriceDelta)).toFixed(productInfo.quoteIncrementRoundValue);
         let orderSize;
+
         if (productInfo.baseIncrementRoundValue === 0) {
             orderSize = Math.trunc(amountToSpend / priceToBuy);
         } else {
@@ -112,6 +114,7 @@ async function buyPosition(balance, updatedPositionInfo, takerFee, currentPrice,
         };
 
         console.log("Buy order params: " + JSON.stringify(orderParams));
+        
         const order = await authedClient.placeOrder(orderParams);
         const orderID = order.id;
 
