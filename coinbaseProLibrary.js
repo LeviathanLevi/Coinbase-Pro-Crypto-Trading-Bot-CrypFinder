@@ -103,9 +103,8 @@ class coinbaseProLib {
             } catch (err) {
                 if (err.response.status === 401) {
                     attempts++;
-                    console.log("Error 401 occurred in getProfiles method, re-attempting execution. Attempts: " + attempts);
                 } else {
-                    const message = "Error occured in getProfiles method.";
+                    const message = "Error occured in getProfiles method. Number of attempts: " + attempts;
                     const errorMsg = new Error(err);
                     console.log({ message, errorMsg, err });
                     completed = true;
@@ -160,9 +159,8 @@ class coinbaseProLib {
             } catch (err) {
                 if (err.response.status === 401) {
                     attempts++;
-                    console.log("Error 401 occurred in profileTransfer method, re-attempting execution. Attempts: " + attempts);
                 } else {
-                    const message = "Error occured in profileTransfer method.";
+                    const message = "Error occured in profileTransfer method. Number of attempts: " + attempts;
                     const errorMsg = new Error(err);
                     console.log({ message, errorMsg, err });
                 }

@@ -85,10 +85,10 @@ function listenForPriceUpdates(productPair) {
     //Turn on the websocket for messages
     websocket.on("message", function(data) {
         if (data.type === "ticker") {
-            if (currentPrice != data.price) {
+            if (currentPrice !== data.price) {
+                currentPrice = parseFloat(data.price);
                 console.log(currentPrice);
             }
-            currentPrice = parseFloat(data.price);
         }
     });
 
