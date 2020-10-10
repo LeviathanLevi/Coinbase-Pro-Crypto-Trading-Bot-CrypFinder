@@ -93,11 +93,17 @@ function listenForPriceUpdates(productPair) {
     });
 
     //turn on the websocket for errors
-    websocket.on("error", err => {
+    websocket.on("error", function(err) {
         const message = "Error occured in the websocket.";
         const errorMsg = new Error(err);
         console.log({ message, errorMsg, err });
         process.exit(1);
+    });
+
+    //Turn on the websocket for closes to restart it
+    websocket.on("close", function() {
+        console.log("WebSocket closed, restarting...");
+        listenForPriceUpdates(productPair);
     });
 }
 
