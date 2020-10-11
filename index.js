@@ -10,8 +10,8 @@ const passphrase = `${process.env.API_PASSPHRASE}`;
 //******************** Configure these values before running the program ******************************************
 
 //Real environment (uncomment out if using in the real enviornment WARNING: you can lose real money, use at your own risk):
-// const apiURI = "https://api.pro.coinbase.com";
-// const websocketURI = "wss://ws-feed.pro.coinbase.com";
+//const apiURI = "https://api.pro.coinbase.com";
+//const websocketURI = "wss://ws-feed.pro.coinbase.com";
 
 //Sandbox environment (uncomment out if using the sandbox for testing):
 const apiURI = "https://api-public.sandbox.pro.coinbase.com";
@@ -40,7 +40,7 @@ const depositProfileName = "Profit savings"; //This is the name of the profile y
 const balanceMinimum = .005; 
  
 //authedClient used to the API calls supported by the coinbase pro api node library
-const authedClient = new CoinbasePro.AuthenticatedClient(
+let authedClient = new CoinbasePro.AuthenticatedClient(
   key,
   secret,
   passphrase,
@@ -136,6 +136,13 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice,  accountIds
     
                 if ((lastValleyPrice <= target) && (lastValleyPrice >= minimum)) {
                     console.log("Attempting to sell position...");
+                    authedClient = new CoinbasePro.AuthenticatedClient(
+                        key,
+                        secret,
+                        passphrase,
+                        apiURI
+                    );
+                    console.log(authedClient);
                     await sellPosition(balance, accountIds, updatedPositionInfo, lastPeakPrice, orderPriceDelta, authedClient, coinbaseLibObject, productInfo);
                 }
             }
@@ -169,6 +176,13 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, updatedPosi
     
                 if (lastPeakPrice >= target) {
                     console.log("Attempting to buy position...");
+                    authedClient = new CoinbasePro.AuthenticatedClient(
+                        key,
+                        secret,
+                        passphrase,
+                        apiURI
+                    );
+                    console.log(authedClient);
                     await buyPosition(balance, updatedPositionInfo, takerFee, lastPeakPrice, orderPriceDelta, authedClient, productInfo);
                 }
             } else  if (lastValleyPrice > currentPrice) {
@@ -282,6 +296,8 @@ async function getProductInfo(productInfo) {
 */
 async function momentumStrategy() {
     try {
+        console.log(authedClient);
+
         let accountIDs = {};
         let lastPeakPrice;
         let lastValleyPrice;
