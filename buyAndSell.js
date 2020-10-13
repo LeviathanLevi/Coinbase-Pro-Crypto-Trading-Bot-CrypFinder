@@ -10,15 +10,19 @@ function sleep(ms) {
 } 
 
 /**
+ * Places a sell limit order then loops to check the order status until the order is filled. Once filled, the method updates the positionInfo, does any depositing based on the 
+ * depositConfig, then ends. If the Order is done for a reason other than filled, or a profit was not made then the method throws an exception. If the order doesn't get filled 
+ * in the alloted time span (1 minute) then the method cancels the order and throws an exception.
  * 
- * @param {*} balance 
- * @param {*} accountIds 
- * @param {*} positionInfo 
- * @param {*} currentPrice 
- * @param {*} orderPriceDelta 
- * @param {*} authedClient 
- * @param {*} coinbaseLibObject 
- * @param {*} productInfo 
+ * @param {Number} balance 
+ * @param {Object} accountIds 
+ * @param {Object} positionInfo 
+ * @param {Number} currentPrice 
+ * @param {Object} authedClient 
+ * @param {Object} coinbaseLibObject 
+ * @param {Object} productInfo 
+ * @param {Object} depositConfig 
+ * @param {Object} tradingConfig 
  */
 async function sellPosition(balance, accountIds, positionInfo, currentPrice, authedClient, coinbaseLibObject, productInfo, depositConfig, tradingConfig) {
     try {
@@ -40,6 +44,7 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
 
         console.log("Sell order params: " + JSON.stringify(orderParams));
 
+        //Place sell order
         const order = await authedClient.placeOrder(orderParams);
         console.log(order);
         const orderID = order.id;
@@ -47,8 +52,8 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
         //Loop to wait for order to be filled:
         for (let i = 0; i < 10 && positionInfo.positionExists === true; ++i) {
             console.log("Checking sell order result...");
-            await sleep(6000);
-            const orderDetails = await authedClient.getOrder(orderID);
+            await sleep(6000); //wait 6 seconds
+            const orderDetails = await authedClient.getOrder(orderID); //Get latest order details
             console.log(orderDetails);
 
             if (orderDetails.status === "done") {
@@ -61,11 +66,12 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
                     console.log("Profit: " + profit);
 
                     if (profit > 0) {
+                        //Check deposit config:
                         if (depositConfig.depositingEnabled) {
                             const transferAmount = (profit * depositConfig.depositingAmount).toFixed(2);
                             const currency = productInfo.quoteCurrency;
 
-                            //transfer funds to depositProfileID
+                            //Transfer funds to depositProfileID
                             const transferResult = await coinbaseLibObject.profileTransfer(accountIds.tradeProfileID, accountIds.depositProfileID, currency, transferAmount);
                             
                             console.log("transfer result: " + transferResult);
@@ -77,6 +83,7 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
             }
         }
 
+        //Check if order wasn't filled and needs cancelled:
         if (positionInfo.positionExists === true) {
             const cancelOrder = await authedClient.cancelOrder(orderID);
             if (cancelOrder !== orderID) {
@@ -92,14 +99,16 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
 }
 
 /**
+ * This method places a buy limit order and loops waiting for it to be filled. Once filled it will update the positionInfo and end. If the
+ * order ends for a reason other then filled it will throw an exception. If the order doesn't get filled after 1 minute it will cancel the
+ * order and throw an exception.
  * 
- * @param {*} balance 
- * @param {*} positionInfo 
- * @param {*} highestFee 
- * @param {*} currentPrice 
- * @param {*} orderPriceDelta 
- * @param {*} authedClient 
- * @param {*} productInfo 
+ * @param {Number} balance 
+ * @param {Object} positionInfo 
+ * @param {Number} currentPrice 
+ * @param {Object} authedClient 
+ * @param {Object} productInfo 
+ * @param {Object} tradingConfig 
  */
 async function buyPosition(balance, positionInfo, currentPrice, authedClient, productInfo, tradingConfig) {
     try {
@@ -122,6 +131,7 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
 
         console.log("Buy order params: " + JSON.stringify(orderParams));
         
+        //Place buy order
         const order = await authedClient.placeOrder(orderParams);
         console.log(order);
         const orderID = order.id;
@@ -129,14 +139,15 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
         //Loop to wait for order to be filled:
         for (let i = 0; i < 10 && positionInfo.positionExists === false; ++i) {
             console.log("Checking buy order result...");
-            await sleep(6000);
-            const orderDetails = await authedClient.getOrder(orderID);
+            await sleep(6000); //wait 6 seconds
+            const orderDetails = await authedClient.getOrder(orderID); //Get latest order details
             console.log(orderDetails);
 
             if (orderDetails.status === "done") {
                 if (orderDetails.done_reason !== "filled") {
                     throw new Error("Buy order did not complete due to being filled? done_reason: " + orderDetails.done_reason);
                 } else {
+                    //Update position info
                     positionInfo.positionExists = true;
                     positionInfo.positionAcquiredPrice = parseFloat(orderDetails.executed_value) / parseFloat(orderDetails.filled_size);
                     positionInfo.positionAcquiredCost = parseFloat(orderDetails.executed_value)  + parseFloat(orderDetails.fill_fees);
@@ -146,6 +157,7 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
             }
         }
 
+        //Check if order wasn't filled and needs cancelled
         if (positionInfo.positionExists === false) {
             const cancelOrder = await authedClient.cancelOrder(orderID);
             if (cancelOrder !== orderID) {

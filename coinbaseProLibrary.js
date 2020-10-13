@@ -3,7 +3,6 @@
 *   The coinbase-pro library still works but it doesn't support all of the API endpoints being used by this project. As a work 
 *   around, this file will create a library that supports those other methods needed for this bot to run. 
 */
-
 const crypto = require("crypto");
 const axios = require("axios");
 
@@ -34,6 +33,8 @@ class coinbaseProLib {
      * @param {string} method 
      * @param {string} requestPath 
      * @param {string} body 
+     * 
+     * @return {string} CB-ACCESS-SIGN value
      */
     async signMessage(method, requestPath, body) {
         try {
@@ -75,6 +76,8 @@ class coinbaseProLib {
      * 
      * Since this library has been suffering from the occasional 401 unauthorized response, it will re-attempt methods 3 times when this occurs.
      * Re-attempts: 3
+     * 
+     * @return {string} API call response data
      */
     async getProfiles() {
         let attempts = 0;
@@ -97,6 +100,7 @@ class coinbaseProLib {
     
                 const fullpath = this.apiURI + requestPath;
     
+                //Call API:
                 const result = await axios.get(fullpath, {headers});
     
                 return result.data;
@@ -125,6 +129,8 @@ class coinbaseProLib {
      * 
      * Since this library has been suffering from the occasional 401 unauthorized response, it will re-attempt methods 3 times when this occurs.
      * Re-attempts: 3
+     * 
+     * @return {string} data from the response
      */
     async profileTransfer(fromProfileID, toProfileID, currency, amount) {
         let attempts = 0;
@@ -153,6 +159,7 @@ class coinbaseProLib {
     
                 const fullpath = this.apiURI + requestPath;
     
+                //Call API:
                 const result = await axios.post(fullpath, body, {headers});
     
                 return result.data;
