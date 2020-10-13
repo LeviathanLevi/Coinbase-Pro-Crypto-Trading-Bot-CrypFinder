@@ -7,16 +7,19 @@ const key = `${process.env.API_KEY}`;
 const secret = `${process.env.API_SECRET}`;
 const passphrase = `${process.env.API_PASSPHRASE}`;
  
-//******************** Configure these values before running the program ******************************************
+//******************** Setup these value configurations before running the program ******************************************
 
+//Real URI config:
 //Real environment (uncomment out if using in the real enviornment WARNING: you can lose real money, use at your own risk):
 //const apiURI = "https://api.pro.coinbase.com";
 //const websocketURI = "wss://ws-feed.pro.coinbase.com";
 
+//Sandbox URI config:
 //Sandbox environment (uncomment out if using the sandbox for testing):
 const apiURI = "https://api-public.sandbox.pro.coinbase.com";
 const websocketURI = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 
+//Trading config:
 //Global constants, consider tuning these values to optimize the bot's trading: 
 const sellPositionProfitDelta = .01; //Minimum amount of money needed to be made before selling position the program will account for taker and maker fees as well
 const sellPositionDelta = .005; //The amount of change between peak and valley to trigger a sell off
@@ -25,15 +28,21 @@ const orderPriceDelta = .001; //The amount of extra room to give the sell/buy or
 const takerFee = .005; //Orders that provide liquidity are maker orders, subject to maker fees
 const makerFee = .005; //Orders that take liquidity are taker orders, subject to taker fees
 
+//Currency config:
 //The pieces of the product pair, this is the two halves of coinbase product pair (examples of product pairs: BTC-USD, DASH-BTC, ETH-USDC). For BTC-USD the base currency is BTC and the quote currency is USD 
 const baseCurrencyName = "BTC";
 const quoteCurrencyName = "USD";
 
+//Profile config:
 //Coinbase portfolios (profiles):
 const tradingProfileName = "BTC trader"; //This is the name of the profile you want the bot to trade in
 const depositProfileName = "Profit savings"; //This is the name of the profile you want to deposit some profits to
 
-//*****************************************************************************************************************
+//Deposit config:
+const depositingEnabled = true; //Choose whether or not you want you want to deposit a cut of the profits (Options: true/false)
+const depositingAmount = 0.5; //Enter the amount of profit you want deposited (Options: choose a percent between 1 and 100 in decimal form I.E. .5 = 50%)
+
+//***************************************************************************************************************************
 
 // Due to rounding errors the buy order may not have enough funds to execute the order. This is the minimum funds amount that
 // will be left in usd account to avoid this error. 
@@ -114,11 +123,11 @@ function listenForPriceUpdates(productPair) {
  * @param {number} lastPeakPrice        Tracks the price highs
  * @param {number} lastValleyPrice      Tracks the price lows
  * @param {object} accountIds           The coinbase account ID associated with the API key used for storing a chunk of the profits in coinbase
- * @param {object} updatedPositionInfo  Contains 3 fields, positionExists (bool), positionAcquiredPrice (number), and positionAcquiredCost(number)
+ * @param {object} positionInfo  Contains 3 fields, positionExists (bool), positionAcquiredPrice (number), and positionAcquiredCost(number)
 */
-async function losePosition(balance, lastPeakPrice, lastValleyPrice,  accountIds, updatedPositionInfo, productInfo) {
+async function losePosition(balance, lastPeakPrice, lastValleyPrice,  accountIds, positionInfo, productInfo, depositConfig, tradingConfig) {
     try {
-        while (updatedPositionInfo.positionExists === true) {
+        while (positionInfo.positionExists === true) {
             await sleep(250);
     
             if (lastPeakPrice < currentPrice) {
@@ -130,20 +139,21 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice,  accountIds
                 lastValleyPrice = currentPrice;
     
                 const target = lastPeakPrice - (lastPeakPrice * sellPositionDelta);
-                const minimum = updatedPositionInfo.positionAcquiredPrice + (updatedPositionInfo.positionAcquiredPrice * (sellPositionProfitDelta + makerFee + takerFee));
+                const minimum = positionInfo.positionAcquiredPrice + (positionInfo.positionAcquiredPrice * (sellPositionProfitDelta + makerFee + takerFee));
     
                 console.log(`Sell Position, LVP: ${lastValleyPrice} needs to be less than or equal to ${target} and greater than or equal to ${minimum} to sell`);
     
                 if ((lastValleyPrice <= target) && (lastValleyPrice >= minimum)) {
                     console.log("Attempting to sell position...");
+
                     authedClient = new CoinbasePro.AuthenticatedClient(
                         key,
                         secret,
                         passphrase,
                         apiURI
                     );
-                    console.log(authedClient);
-                    await sellPosition(balance, accountIds, updatedPositionInfo, lastPeakPrice, orderPriceDelta, authedClient, coinbaseLibObject, productInfo);
+
+                    await sellPosition(balance, accountIds, positionInfo, lastValleyPrice, authedClient, coinbaseLibObject, productInfo, depositConfig, tradingConfig);
                 }
             }
         }
@@ -160,11 +170,11 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice,  accountIds
  * @param {number} balance              The amount of currency being traded with
  * @param {number} lastPeakPrice        Tracks the price highs
  * @param {number} lastValleyPrice      Tracks the price lows
- * @param {object} updatedPositionInfo  Contains 3 fields, positionExists (bool), positionAcquiredPrice (number), and positionAcquiredCost(number)
+ * @param {object} positionInfo  Contains 3 fields, positionExists (bool), positionAcquiredPrice (number), and positionAcquiredCost(number)
 */
-async function gainPosition(balance, lastPeakPrice, lastValleyPrice, updatedPositionInfo, productInfo) {
+async function gainPosition(balance, lastPeakPrice, lastValleyPrice, positionInfo, productInfo, depositConfig, tradingConfig) {
     try {
-        while (updatedPositionInfo.positionExists === false) {
+        while (positionInfo.positionExists === false) {
             await sleep(250);
             
             if (lastPeakPrice < currentPrice) {
@@ -176,14 +186,15 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, updatedPosi
     
                 if (lastPeakPrice >= target) {
                     console.log("Attempting to buy position...");
+
                     authedClient = new CoinbasePro.AuthenticatedClient(
                         key,
                         secret,
                         passphrase,
                         apiURI
                     );
-                    console.log(authedClient);
-                    await buyPosition(balance, updatedPositionInfo, takerFee, lastPeakPrice, orderPriceDelta, authedClient, productInfo);
+
+                    await buyPosition(balance, positionInfo, lastPeakPrice, authedClient, productInfo, tradingConfig);
                 }
             } else  if (lastValleyPrice > currentPrice) {
                 lastPeakPrice = currentPrice;
@@ -296,19 +307,37 @@ async function getProductInfo(productInfo) {
 */
 async function momentumStrategy() {
     try {
-        console.log(authedClient);
-
         let accountIDs = {};
         let lastPeakPrice;
         let lastValleyPrice;
-        let updatedPositionInfo = {
+        let highestFee = makerFee;
+
+        if (takerFee > makerFee) {
+            highestFee = takerFee;
+        }
+
+        const tradingConfig = {
+            sellPositionProfitDelta,
+            sellPositionDelta,
+            buyPositionDelta,
+            orderPriceDelta,
+            highestFee
+        };
+
+        const depositConfig = {
+            depositingEnabled,
+            depositingAmount
+        };
+
+        const positionInfo = {
             positionExists: false
         };
-        let productInfo = {
+
+        const productInfo = {
             baseCurrency: baseCurrencyName,
             quoteCurrency: quoteCurrencyName,
             productPair: baseCurrencyName + "-" + quoteCurrencyName
-        }
+        };
 
         //Retrieve product information:
         await getProductInfo(productInfo);
@@ -326,7 +355,7 @@ async function momentumStrategy() {
 
         // eslint-disable-next-line no-constant-condition
         while (true) {
-            if (updatedPositionInfo.positionExists) {
+            if (positionInfo.positionExists) {
                 try {
                     await sleep(1000);
                     const baseCurrencyAccount = await authedClient.getAccount(accountIDs.baseCurrencyAccountID);
@@ -337,7 +366,7 @@ async function momentumStrategy() {
                         lastPeakPrice = currentPrice;
                         lastValleyPrice = currentPrice;
 
-                        await losePosition(parseFloat(baseCurrencyAccount.available), lastPeakPrice, lastValleyPrice, accountIDs, updatedPositionInfo, productInfo);
+                        await losePosition(parseFloat(baseCurrencyAccount.available), lastPeakPrice, lastValleyPrice, accountIDs, positionInfo, productInfo, depositConfig, tradingConfig);
                     } else {
                         throw new Error(`Error, there is no ${productInfo.baseCurrency} balance available for use. Terminating program.`);
                     }
@@ -362,7 +391,7 @@ async function momentumStrategy() {
                         lastPeakPrice = currentPrice;
                         lastValleyPrice = currentPrice;
 
-                        await gainPosition(tradeBalance, lastPeakPrice, lastValleyPrice, updatedPositionInfo, productInfo);
+                        await gainPosition(tradeBalance, lastPeakPrice, lastValleyPrice, positionInfo, productInfo, depositConfig, tradingConfig);
                     } else {
                         throw new Error(`Error, there is no ${productInfo.quoteCurrency} balance available for use. Terminating program.`);
                     }
