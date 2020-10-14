@@ -93,6 +93,20 @@ function listenForPriceUpdates(productPair) {
         { channels: ["ticker"] }
     );
 
+    //turn on the websocket for errors
+    websocket.on("error", function(err) {
+        const message = "Error occured in the websocket.";
+        const errorMsg = new Error(err);
+        console.log({ message, errorMsg, err });
+        listenForPriceUpdates(productPair);
+    });
+
+    //Turn on the websocket for closes to restart it
+    websocket.on("close", function() {
+        console.log("WebSocket closed, restarting...");
+        listenForPriceUpdates(productPair);
+    });
+
     //Turn on the websocket for messages
     websocket.on("message", function(data) {
         if (data.type === "ticker") {
@@ -101,20 +115,6 @@ function listenForPriceUpdates(productPair) {
                 console.log(currentPrice);
             }
         }
-    });
-
-    //turn on the websocket for errors
-    websocket.on("error", function(err) {
-        const message = "Error occured in the websocket.";
-        const errorMsg = new Error(err);
-        console.log({ message, errorMsg, err });
-        process.exit(1);
-    });
-
-    //Turn on the websocket for closes to restart it
-    websocket.on("close", function() {
-        console.log("WebSocket closed, restarting...");
-        listenForPriceUpdates(productPair);
     });
 }
 
