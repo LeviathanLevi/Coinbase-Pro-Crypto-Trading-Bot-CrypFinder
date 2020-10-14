@@ -9,12 +9,10 @@ const passphrase = `${process.env.API_PASSPHRASE}`;
  
 //******************** Setup these value configurations before running the program ******************************************
 
-//Real URI config:
 //Real environment (uncomment out if using in the real enviornment WARNING: you can lose real money, use at your own risk):
 //const apiURI = "https://api.pro.coinbase.com";
 //const websocketURI = "wss://ws-feed.pro.coinbase.com";
 
-//Sandbox URI config:
 //Sandbox environment (uncomment out if using the sandbox for testing):
 const apiURI = "https://api-public.sandbox.pro.coinbase.com";
 const websocketURI = "wss://ws-feed-public.sandbox.pro.coinbase.com";
@@ -42,11 +40,11 @@ const depositProfileName = "Profit savings"; //This is the name of the profile y
 const depositingEnabled = true; //Choose whether or not you want you want to deposit a cut of the profits (Options: true/false)
 const depositingAmount = 0.5; //Enter the amount of profit you want deposited (Options: choose a percent between 1 and 100 in decimal form I.E. .5 = 50%)
 
-//***************************************************************************************************************************
-
 // Due to rounding errors the buy order may not have enough funds to execute the order. This is the minimum funds amount that
 // will be left in usd account to avoid this error. 
 const balanceMinimum = .005; 
+
+//***************************************************************************************************************************
  
 //authedClient used to the API calls supported by the coinbase pro api node library
 let authedClient = new CoinbasePro.AuthenticatedClient(
@@ -374,7 +372,10 @@ async function momentumStrategy() {
         //activate websocket for price data:
         listenForPriceUpdates(productInfo.productPair);
 
-        await sleep(60000);
+        while (currentPrice === null) {
+            await sleep(1000); //Get a price before starting
+        }
+        
         console.log(`Starting price of ${productInfo.baseCurrency} in ${productInfo.quoteCurrency} is: ${currentPrice}`);
 
         // eslint-disable-next-line no-constant-condition
