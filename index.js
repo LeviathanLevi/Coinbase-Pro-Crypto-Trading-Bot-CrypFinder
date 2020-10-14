@@ -372,7 +372,7 @@ async function momentumStrategy() {
         //activate websocket for price data:
         listenForPriceUpdates(productInfo.productPair);
 
-        while (currentPrice === null) {
+        while (currentPrice == null) {
             await sleep(1000); //Get a price before starting
         }
         
