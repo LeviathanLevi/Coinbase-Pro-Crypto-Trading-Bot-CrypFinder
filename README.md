@@ -32,11 +32,11 @@ I suggest starting by using this program in the [Coinbase Pro Sandbox](https://d
 1. Fork the repo.
 2. Clone the github repo locally and run `npm install` 
 3. Switch to the latest development branch to get the up-to-date progress.
-3. Create a new branch with a name that describes the feature/change you're making.
-4. Check the roadmap for ideas of things to work on.
-5. Make your changes and commit them with a descriptive message.
-6. Push your changes upstream.
-7. When you're done testing your changes, create a PR in your forked repository. Select LeviathanLevi/Coinbase-Pro-Crypto-Trading-Bot-CrypFinder to merge into. Then wait for approval.
+4. Create a new branch with a name that describes the feature/change you're making.
+5. Check the roadmap for ideas of things to work on.
+6. Make your changes and commit them with a descriptive message.
+7. Push your changes upstream.
+8. When you're done testing your changes, create a PR in your forked repository. Select LeviathanLevi/Coinbase-Pro-Crypto-Trading-Bot-CrypFinder to merge into. Then wait for approval.
 
 ## Running the program out of sandbox:
 When you're confident in the configuration/code base and want to run it in the real environment, comment out the sandbox env variables and uncomment out the real API URI variables. Update the .env file with a valid API key. You can run this program on your own machine or consider using a server such as an AWS EC2 instance with an EIP (you need to whitelist the API IP). AWS EC2 offers a free tier instance for a year that works well for hosting.
