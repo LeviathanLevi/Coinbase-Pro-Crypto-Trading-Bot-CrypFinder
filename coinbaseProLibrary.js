@@ -5,6 +5,8 @@
 */
 const crypto = require("crypto");
 const axios = require("axios");
+const pino = require("pino");
+const logger = pino({ level: process.env.LOG_LEVEL || "info" });
 
 /**
  * Class: This class creates an easy way to create methods to call API endpoints. It stores
@@ -66,7 +68,7 @@ class coinbaseProLib {
         } catch (err) {
             const message = "Error occured in signMessage method.";
             const errorMsg = new Error(err);
-            console.log({ message, errorMsg, err });
+            logger.error({ message, errorMsg, err });
         }
     }
 
@@ -110,7 +112,7 @@ class coinbaseProLib {
                 } else {
                     const message = "Error occured in getProfiles method. Number of attempts: " + attempts;
                     const errorMsg = new Error(err);
-                    console.log({ message, errorMsg, err });
+                    logger.error({ message, errorMsg, err });
                     completed = true;
                 }
             }
@@ -169,7 +171,7 @@ class coinbaseProLib {
                 } else {
                     const message = "Error occured in profileTransfer method. Number of attempts: " + attempts;
                     const errorMsg = new Error(err);
-                    console.log({ message, errorMsg, err });
+                    logger.error({ message, errorMsg, err });
                 }
             }
         }

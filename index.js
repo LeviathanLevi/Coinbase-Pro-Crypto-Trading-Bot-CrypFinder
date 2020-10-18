@@ -2,6 +2,8 @@ const CoinbasePro = require("coinbase-pro");
 require('dotenv').config()
 const {buyPosition, sellPosition} = require("./buyAndSell");
 const coinbaseProLib = require("./coinbaseProLibrary");
+const pino = require("pino");
+const logger = pino({ level: process.env.LOG_LEVEL || "info" });
 
 const key = `${process.env.API_KEY}`;
 const secret = `${process.env.API_SECRET}`;
@@ -20,8 +22,8 @@ const websocketURI = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 //Trading config:
 //Global constants, consider tuning these values to optimize the bot's trading: 
 const sellPositionProfitDelta = .01; //Minimum amount of money needed to be made before selling position the program will account for taker and maker fees as well
-const sellPositionDelta = .005; //The amount of change between peak and valley to trigger a sell off
-const buyPositionDelta = .005; //The amount of change between the peak and valley price to trigger a buy in
+const sellPositionDelta = .0001; //The amount of change between peak and valley to trigger a sell off
+const buyPositionDelta = .0001; //The amount of change between the peak and valley price to trigger a buy in
 const orderPriceDelta = .001; //The amount of extra room to give the sell/buy orders to go through
 const takerFee = .005; //Orders that provide liquidity are maker orders, subject to maker fees
 const makerFee = .005; //Orders that take liquidity are taker orders, subject to taker fees
@@ -97,13 +99,13 @@ function listenForPriceUpdates(productPair) {
     websocket.on("error", function(err) {
         const message = "Error occured in the websocket.";
         const errorMsg = new Error(err);
-        console.log({ message, errorMsg, err });
+        logger.error({ message, errorMsg, err });
         listenForPriceUpdates(productPair);
     });
 
     //Turn on the websocket for closes to restart it
     websocket.on("close", function() {
-        console.log("WebSocket closed, restarting...");
+        logger.debug("WebSocket closed, restarting...");
         listenForPriceUpdates(productPair);
     });
 
@@ -112,7 +114,7 @@ function listenForPriceUpdates(productPair) {
         if (data.type === "ticker") {
             if (currentPrice !== data.price) {
                 currentPrice = parseFloat(data.price);
-                console.log(currentPrice);
+                logger.debug("Ticker price: " + currentPrice);
             }
         }
     });
@@ -142,7 +144,7 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice,  accountIds
                 lastPeakPrice = currentPrice;
                 lastValleyPrice = currentPrice;
     
-                console.log(`Sell Position, LPP: ${lastPeakPrice}`);
+                logger.debug(`Sell Position, LPP: ${lastPeakPrice}`);
             } else if (lastValleyPrice > currentPrice) {
                 //New valley hit, track valley and check sell conditions
                 lastValleyPrice = currentPrice;
@@ -150,10 +152,10 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice,  accountIds
                 const target = lastPeakPrice - (lastPeakPrice * sellPositionDelta);
                 const minimum = positionInfo.positionAcquiredPrice + (positionInfo.positionAcquiredPrice * (sellPositionProfitDelta + makerFee + takerFee));
     
-                console.log(`Sell Position, LVP: ${lastValleyPrice} needs to be less than or equal to ${target} and greater than or equal to ${minimum} to sell`);
+                logger.debug(`Sell Position, LVP: ${lastValleyPrice} needs to be less than or equal to ${target} and greater than or equal to ${minimum} to sell`);
     
                 if ((lastValleyPrice <= target) && (lastValleyPrice >= minimum)) {
-                    console.log("Attempting to sell position...");
+                    logger.info("Attempting to sell position...");
 
                     //Create a new authenticated client to prevent it from expiring or hitting API limits
                     authedClient = new CoinbasePro.AuthenticatedClient(
@@ -170,7 +172,7 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice,  accountIds
     } catch (err) {
         const message = "Error occured in losePosition method.";
         const errorMsg = new Error(err);
-        console.log({ message, errorMsg, err });
+        logger.error({ message, errorMsg, err });
     }
 }
 
@@ -197,10 +199,10 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, positionInf
     
                 const target = lastValleyPrice + (lastValleyPrice * buyPositionDelta);
     
-                console.log(`Buy Position, LPP: ${lastPeakPrice} needs to be greater than or equal to ${target} to buy`);
+                logger.debug(`Buy Position, LPP: ${lastPeakPrice} needs to be greater than or equal to ${target} to buy`);
     
                 if (lastPeakPrice >= target) {
-                    console.log("Attempting to buy position...");
+                    logger.info("Attempting to buy position...");
                     
                     //Create a new authenticated client to prevent it from expiring or hitting API limits
                     authedClient = new CoinbasePro.AuthenticatedClient(
@@ -218,13 +220,13 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, positionInf
                 lastPeakPrice = currentPrice;
                 lastValleyPrice = currentPrice;
     
-                console.log(`Buy Position, LVP: ${lastValleyPrice}`);
+                logger.debug(`Buy Position, LVP: ${lastValleyPrice}`);
             }
         }
     } catch (err) {
         const message = "Error occured in gainPosition method.";
         const errorMsg = new Error(err);
-        console.log({ message, errorMsg, err });
+        logger.error({ message, errorMsg, err });
     }
 }
 
@@ -264,7 +266,8 @@ async function getAccountIDs(productInfo) {
     } catch (err) {
         const message = "Error occured in getAccountIDs method.";
         const errorMsg = new Error(err);
-        console.log({ message, errorMsg, err });
+        logger.error({ message, errorMsg, err });
+        process.exit(1);
     }
 }
 
@@ -318,7 +321,8 @@ async function getProductInfo(productInfo) {
     } catch (err) {
         const message = "Error occured in getProfuctInfo method.";
         const errorMsg = new Error(err);
-        console.log({ message, errorMsg, err });
+        logger.error({ message, errorMsg, err });
+        process.exit(1);
     }
 }
 
@@ -363,11 +367,11 @@ async function momentumStrategy() {
 
         //Retrieve product information:
         await getProductInfo(productInfo);
-        console.log(productInfo);
+        logger.info(productInfo);
         
         //Retrieve account IDs:
         accountIDs = await getAccountIDs(productInfo);
-        console.log(accountIDs)
+        logger.info(accountIDs)
 
         //activate websocket for price data:
         listenForPriceUpdates(productInfo.productPair);
@@ -376,7 +380,7 @@ async function momentumStrategy() {
             await sleep(1000); //Get a price before starting
         }
         
-        console.log(`Starting price of ${productInfo.baseCurrency} in ${productInfo.quoteCurrency} is: ${currentPrice}`);
+        logger.info(`Starting price of ${productInfo.baseCurrency} in ${productInfo.quoteCurrency} is: ${currentPrice}`);
 
         // eslint-disable-next-line no-constant-condition
         while (true) {
@@ -386,7 +390,7 @@ async function momentumStrategy() {
                     const baseCurrencyAccount = await authedClient.getAccount(accountIDs.baseCurrencyAccountID); //Grab account information to view balance
 
                     if (baseCurrencyAccount.available > 0) {
-                        console.log("Entering lose position with: " + baseCurrencyAccount.available + " " + productInfo.baseCurrency);
+                        logger.info("Entering lose position with: " + baseCurrencyAccount.available + " " + productInfo.baseCurrency);
 
                         lastPeakPrice = currentPrice;
                         lastValleyPrice = currentPrice;
@@ -400,7 +404,7 @@ async function momentumStrategy() {
                 } catch (err) {
                     const message = "Error occured when positionExists equals true";
                     const errorMsg = new Error(err);
-                    console.log({ message, errorMsg, err });
+                    logger.error({ message, errorMsg, err });
                     process.exit(1);
                 }
             } else {
@@ -412,7 +416,7 @@ async function momentumStrategy() {
                     if (availableBalance > 0) {
                         const tradeBalance = availableBalance - (availableBalance * balanceMinimum);
 
-                        console.log("Entering gain position with: " + tradeBalance + " " + productInfo.quoteCurrency);
+                        logger.info("Entering gain position with: " + tradeBalance + " " + productInfo.quoteCurrency);
 
                         lastPeakPrice = currentPrice;
                         lastValleyPrice = currentPrice;
@@ -426,7 +430,7 @@ async function momentumStrategy() {
                 } catch (err) {
                     const message = "Error occured when positionExists equals false";
                     const errorMsg = new Error(err);
-                    console.log({ message, errorMsg, err });
+                    logger.error({ message, errorMsg, err });
                     process.exit(1);
                 }
             }
@@ -434,7 +438,7 @@ async function momentumStrategy() {
     } catch (err) {
         const message = "Error occured in momentumStrategy method.";
         const errorMsg = new Error(err);
-        console.log({ message, errorMsg, err });
+        logger.error({ message, errorMsg, err });
     }
 }
 
