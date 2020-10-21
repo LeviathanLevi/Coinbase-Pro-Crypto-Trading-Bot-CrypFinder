@@ -156,7 +156,7 @@ class coinbaseProLib {
                 if (attempts < numberOfAttempts - 1) {
                     attempts++;
                 } else {
-                    const message = "Error occured in getProfiles method. Number of attempts: " + numberOfAttempts;
+                    const message = "Error occured in getFees method. Number of attempts: " + numberOfAttempts;
                     const errorMsg = new Error(err);
                     logger.error({ message, errorMsg, err });
                     throw err;
