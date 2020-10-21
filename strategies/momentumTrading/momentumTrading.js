@@ -23,8 +23,8 @@ const websocketURI = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 //Trading config:
 //Global constants, consider tuning these values to optimize the bot's trading: 
 const sellPositionProfitDelta = .01; //Minimum amount of money needed to be made before selling position the program will account for taker and maker fees as well
-const sellPositionDelta = .0001; //The amount of change between peak and valley to trigger a sell off
-const buyPositionDelta = .0001; //The amount of change between the peak and valley price to trigger a buy in
+const sellPositionDelta = .005; //The amount of change between peak and valley to trigger a sell off
+const buyPositionDelta = .005; //The amount of change between the peak and valley price to trigger a buy in
 const orderPriceDelta = .001; //The amount of extra room to give the sell/buy orders to go through
 
 //Currency config:
@@ -391,6 +391,7 @@ async function momentumStrategyStart() {
             //read positionData file:
             let rawFileData = fileSystem.readFileSync("positionData.json");
             positionInfo = JSON.parse(rawFileData);
+            logger.info("Found positionData.json file, starting with position data. Position data: " + JSON.stringify(positionInfo));
         } catch (err) {
             if (err.code === "ENOENT") {
                 logger.info("No positionData file found, starting with no existing position.");
