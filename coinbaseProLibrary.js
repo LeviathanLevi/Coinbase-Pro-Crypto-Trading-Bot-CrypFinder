@@ -8,6 +8,8 @@ const axios = require("axios");
 const pino = require("pino");
 const logger = pino({ level: process.env.LOG_LEVEL || "info" });
 
+const numberOfAttempts = 3;
+
 /**
  * Class: This class creates an easy way to create methods to call API endpoints. It stores
  * the needed information upon construction and provides a method to sign messages. Which
@@ -76,15 +78,12 @@ class coinbaseProLib {
      * Calls the endpoint /profiles to get a list of the avaiable portfolio (profile) IDs for the account
      * Check the documentation for more information on this endpoint.
      * 
-     * Since this library has been suffering from the occasional 401 unauthorized response, it will re-attempt methods 3 times when this occurs.
-     * Re-attempts: 3
-     * 
      * @return {string} API call response data
      */
     async getProfiles() {
         let attempts = 0;
         let completed = false;
-        while (attempts < 3 && completed === false) {
+        while (attempts < numberOfAttempts && completed === false) {
             try {
                 const method = "GET";
                 const requestPath = "/profiles";
@@ -107,10 +106,56 @@ class coinbaseProLib {
     
                 return result.data;
             } catch (err) {
-                if (err.response.status === 401) {
+                if (attempts < numberOfAttempts - 1) {
                     attempts++;
                 } else {
-                    const message = "Error occured in getProfiles method. Number of attempts: " + attempts;
+                    const message = "Error occured in getProfiles method. Number of attempts: " + numberOfAttempts;
+                    const errorMsg = new Error(err);
+                    logger.error({ message, errorMsg, err });
+                    completed = true;
+                }
+            }
+        }
+    }
+
+    /**
+     * Calls the endpoint /fees to get the current maker and taker fees
+     * Check the documentation for more information on this endpoint.
+     * 
+     * Re-attempts: 3
+     * 
+     * @return {array} API call response data
+     */
+    async getFees() {
+        let attempts = 0;
+        let completed = false;
+        while (attempts < numberOfAttempts && completed === false) {
+            try {
+                const method = "GET";
+                const requestPath = "/fees";
+                const body = null;
+                const timestamp = Date.now() / 1000;
+    
+                const sign = await this.signMessage(method, requestPath, body);
+    
+                const headers = {
+                    "CB-ACCESS-KEY": this.apiKey,
+                    "CB-ACCESS-SIGN": sign,
+                    "CB-ACCESS-TIMESTAMP": timestamp,
+                    "CB-ACCESS-PASSPHRASE": this.apiPassphrase
+                };
+    
+                const fullpath = this.apiURI + requestPath;
+    
+                //Call API:
+                const result = await axios.get(fullpath, {headers});
+    
+                return result.data;
+            } catch (err) {
+                if (attempts < numberOfAttempts - 1) {
+                    attempts++;
+                } else {
+                    const message = "Error occured in getProfiles method. Number of attempts: " + numberOfAttempts;
                     const errorMsg = new Error(err);
                     logger.error({ message, errorMsg, err });
                     completed = true;
@@ -129,7 +174,6 @@ class coinbaseProLib {
      * @param {string} currency 
      * @param {string} amount 
      * 
-     * Since this library has been suffering from the occasional 401 unauthorized response, it will re-attempt methods 3 times when this occurs.
      * Re-attempts: 3
      * 
      * @return {string} data from the response
@@ -137,7 +181,7 @@ class coinbaseProLib {
     async profileTransfer(fromProfileID, toProfileID, currency, amount) {
         let attempts = 0;
         let completed = false;
-        while (attempts < 3 && completed === false) {
+        while (attempts < numberOfAttempts && completed === false) {
             try {
                 const method = "POST";
                 const requestPath = "/profiles/transfer";
@@ -166,10 +210,10 @@ class coinbaseProLib {
     
                 return result.data;
             } catch (err) {
-                if (err.response.status === 401) {
+                if (attempts < numberOfAttempts - 1) {
                     attempts++;
                 } else {
-                    const message = "Error occured in profileTransfer method. Number of attempts: " + attempts;
+                    const message = "Error occured in profileTransfer method. Number of attempts: " + numberOfAttempts;
                     const errorMsg = new Error(err);
                     logger.error({ message, errorMsg, err });
                 }

@@ -327,6 +327,33 @@ async function getProductInfo(productInfo) {
 }
 
 /**
+ * Retrieves the current maker and taker fees and returns the highest one as a number
+ * 
+ * @param {number} highestFee The highest fee between the taker and maker fee
+ */
+async function returnHighestFee(){
+    try {
+        const feeResult = await coinbaseLibObject.getFees();
+        
+        let makerFee = parseFloat(feeResult.maker_fee_rate);
+        let takerFee = parseFloat(feeResult.taker_fee_rate);
+
+        if (makerFee > takerFee) {
+            return makerFee;
+        } else {
+            return takerFee;
+        }
+    }
+    catch (err) {
+        const message = "Error occured in getFees method.";
+        const errorMsg = new Error(err);
+        logger.error({ message, errorMsg, err });
+        process.exit(1);
+    }
+}
+
+
+/**
  * This method is the entry point of the momentum strategy. It does some first time initialization then begins an infinite loop.
  * The loop checks the position info to decide if the bot needs to try and buy or sell, it also checks if there's an available 
  * balance to be traded with. Then it calls gainPosition or losePosition appropiately and waits for them to finish and repeats.
@@ -336,11 +363,7 @@ async function momentumStrategyStart() {
         let accountIDs = {};
         let lastPeakPrice;
         let lastValleyPrice;
-        let highestFee = makerFee;
-
-        if (takerFee > makerFee) {
-            highestFee = takerFee;
-        }
+        let highestFee = await returnHighestFee();
 
         const tradingConfig = {
             sellPositionProfitDelta,
@@ -386,6 +409,7 @@ async function momentumStrategyStart() {
         while (true) {
             if (positionInfo.positionExists) {
                 try {
+                    tradingConfig.highestFee = await returnHighestFee();
                     await sleep(1000);
                     const baseCurrencyAccount = await authedClient.getAccount(accountIDs.baseCurrencyAccountID); //Grab account information to view balance
 
@@ -409,6 +433,7 @@ async function momentumStrategyStart() {
                 }
             } else {
                 try {
+                    tradingConfig.highestFee = await returnHighestFee();
                     await sleep(1000);
                     const quoteCurrencyAccount = await authedClient.getAccount(accountIDs.quoteCurrencyAccountID); //Grab account information to view balance
                     const availableBalance = parseFloat(quoteCurrencyAccount.available);
