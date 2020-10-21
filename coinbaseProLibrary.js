@@ -71,6 +71,7 @@ class coinbaseProLib {
             const message = "Error occured in signMessage method.";
             const errorMsg = new Error(err);
             logger.error({ message, errorMsg, err });
+            throw err;
         }
     }
 
@@ -82,8 +83,8 @@ class coinbaseProLib {
      */
     async getProfiles() {
         let attempts = 0;
-        let completed = false;
-        while (attempts < numberOfAttempts && completed === false) {
+
+        while (attempts < numberOfAttempts) {
             try {
                 const method = "GET";
                 const requestPath = "/profiles";
@@ -112,7 +113,7 @@ class coinbaseProLib {
                     const message = "Error occured in getProfiles method. Number of attempts: " + numberOfAttempts;
                     const errorMsg = new Error(err);
                     logger.error({ message, errorMsg, err });
-                    completed = true;
+                    throw err;
                 }
             }
         }
@@ -128,8 +129,8 @@ class coinbaseProLib {
      */
     async getFees() {
         let attempts = 0;
-        let completed = false;
-        while (attempts < numberOfAttempts && completed === false) {
+
+        while (attempts < numberOfAttempts) {
             try {
                 const method = "GET";
                 const requestPath = "/fees";
@@ -158,7 +159,7 @@ class coinbaseProLib {
                     const message = "Error occured in getProfiles method. Number of attempts: " + numberOfAttempts;
                     const errorMsg = new Error(err);
                     logger.error({ message, errorMsg, err });
-                    completed = true;
+                    throw err;
                 }
             }
         }
@@ -180,8 +181,8 @@ class coinbaseProLib {
      */
     async profileTransfer(fromProfileID, toProfileID, currency, amount) {
         let attempts = 0;
-        let completed = false;
-        while (attempts < numberOfAttempts && completed === false) {
+
+        while (attempts < numberOfAttempts) {
             try {
                 const method = "POST";
                 const requestPath = "/profiles/transfer";
@@ -216,6 +217,7 @@ class coinbaseProLib {
                     const message = "Error occured in profileTransfer method. Number of attempts: " + numberOfAttempts;
                     const errorMsg = new Error(err);
                     logger.error({ message, errorMsg, err });
+                    throw err;
                 }
             }
         }

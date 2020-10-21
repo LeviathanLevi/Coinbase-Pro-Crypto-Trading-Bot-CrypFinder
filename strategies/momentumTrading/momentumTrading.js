@@ -25,8 +25,6 @@ const sellPositionProfitDelta = .01; //Minimum amount of money needed to be made
 const sellPositionDelta = .0001; //The amount of change between peak and valley to trigger a sell off
 const buyPositionDelta = .0001; //The amount of change between the peak and valley price to trigger a buy in
 const orderPriceDelta = .001; //The amount of extra room to give the sell/buy orders to go through
-const takerFee = .005; //Orders that provide liquidity are maker orders, subject to maker fees
-const makerFee = .005; //Orders that take liquidity are taker orders, subject to taker fees
 
 //Currency config:
 //The pieces of the product pair, this is the two halves of coinbase product pair (examples of product pairs: BTC-USD, DASH-BTC, ETH-USDC). For BTC-USD the base currency is BTC and the quote currency is USD 
@@ -134,7 +132,7 @@ function listenForPriceUpdates(productPair) {
  * @param {Object} depositConfig        Conatins information about whether to do a deposit and for how much after a sell
  * @param {Object} tradingConfig        Contains information about the fees and deltas 
  */
-async function losePosition(balance, lastPeakPrice, lastValleyPrice,  accountIds, positionInfo, productInfo, depositConfig, tradingConfig) {
+async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds, positionInfo, productInfo, depositConfig, tradingConfig) {
     try {
         while (positionInfo.positionExists === true) {
             await sleep(250); //Let price update
@@ -150,7 +148,7 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice,  accountIds
                 lastValleyPrice = currentPrice;
     
                 const target = lastPeakPrice - (lastPeakPrice * sellPositionDelta);
-                const minimum = positionInfo.positionAcquiredPrice + (positionInfo.positionAcquiredPrice * (sellPositionProfitDelta + makerFee + takerFee));
+                const minimum = positionInfo.positionAcquiredPrice + (positionInfo.positionAcquiredPrice * (sellPositionProfitDelta + (tradingConfig.highestFee * 2)));
     
                 logger.debug(`Sell Position, LVP: ${lastValleyPrice} needs to be less than or equal to ${target} and greater than or equal to ${minimum} to sell`);
     
@@ -173,6 +171,7 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice,  accountIds
         const message = "Error occured in losePosition method.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
+        throw err;
     }
 }
 
@@ -227,6 +226,7 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, positionInf
         const message = "Error occured in gainPosition method.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
+        throw err;
     }
 }
 
@@ -267,7 +267,7 @@ async function getAccountIDs(productInfo) {
         const message = "Error occured in getAccountIDs method.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
-        process.exit(1);
+        throw err;
     }
 }
 
@@ -322,7 +322,7 @@ async function getProductInfo(productInfo) {
         const message = "Error occured in getProfuctInfo method.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
-        process.exit(1);
+        throw err;
     }
 }
 
@@ -348,10 +348,9 @@ async function returnHighestFee(){
         const message = "Error occured in getFees method.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
-        process.exit(1);
+        throw err;
     }
 }
-
 
 /**
  * This method is the entry point of the momentum strategy. It does some first time initialization then begins an infinite loop.
@@ -408,62 +407,47 @@ async function momentumStrategyStart() {
         // eslint-disable-next-line no-constant-condition
         while (true) {
             if (positionInfo.positionExists) {
-                try {
-                    tradingConfig.highestFee = await returnHighestFee();
-                    await sleep(1000);
-                    const baseCurrencyAccount = await authedClient.getAccount(accountIDs.baseCurrencyAccountID); //Grab account information to view balance
+                tradingConfig.highestFee = await returnHighestFee();
+                await sleep(1000);
+                const baseCurrencyAccount = await authedClient.getAccount(accountIDs.baseCurrencyAccountID); //Grab account information to view balance
 
-                    if (baseCurrencyAccount.available > 0) {
-                        logger.info("Entering lose position with: " + baseCurrencyAccount.available + " " + productInfo.baseCurrency);
+                if (baseCurrencyAccount.available > 0) {
+                    logger.info("Entering lose position with: " + baseCurrencyAccount.available + " " + productInfo.baseCurrency);
 
-                        lastPeakPrice = currentPrice;
-                        lastValleyPrice = currentPrice;
+                    lastPeakPrice = currentPrice;
+                    lastValleyPrice = currentPrice;
 
-                        //Begin trying to sell position:
-                        await losePosition(parseFloat(baseCurrencyAccount.available), lastPeakPrice, lastValleyPrice, accountIDs, positionInfo, productInfo, depositConfig, tradingConfig);
-                    } else {
-                        throw new Error(`Error, there is no ${productInfo.baseCurrency} balance available for use. Terminating program.`);
-                    }
-
-                } catch (err) {
-                    const message = "Error occured when positionExists equals true";
-                    const errorMsg = new Error(err);
-                    logger.error({ message, errorMsg, err });
-                    process.exit(1);
+                    //Begin trying to sell position:
+                    await losePosition(parseFloat(baseCurrencyAccount.available), lastPeakPrice, lastValleyPrice, accountIDs, positionInfo, productInfo, depositConfig, tradingConfig);
+                } else {
+                    throw new Error(`Error, there is no ${productInfo.baseCurrency} balance available for use. Terminating program.`);
                 }
             } else {
-                try {
-                    tradingConfig.highestFee = await returnHighestFee();
-                    await sleep(1000);
-                    const quoteCurrencyAccount = await authedClient.getAccount(accountIDs.quoteCurrencyAccountID); //Grab account information to view balance
-                    const availableBalance = parseFloat(quoteCurrencyAccount.available);
+                tradingConfig.highestFee = await returnHighestFee();
+                await sleep(1000);
+                const quoteCurrencyAccount = await authedClient.getAccount(accountIDs.quoteCurrencyAccountID); //Grab account information to view balance
+                const availableBalance = parseFloat(quoteCurrencyAccount.available);
 
-                    if (availableBalance > 0) {
-                        const tradeBalance = availableBalance - (availableBalance * balanceMinimum);
+                if (availableBalance > 0) {
+                    const tradeBalance = availableBalance - (availableBalance * balanceMinimum);
 
-                        logger.info("Entering gain position with: " + tradeBalance + " " + productInfo.quoteCurrency);
+                    logger.info("Entering gain position with: " + tradeBalance + " " + productInfo.quoteCurrency);
 
-                        lastPeakPrice = currentPrice;
-                        lastValleyPrice = currentPrice;
+                    lastPeakPrice = currentPrice;
+                    lastValleyPrice = currentPrice;
 
-                        //Begin trying to buy a position:
-                        await gainPosition(tradeBalance, lastPeakPrice, lastValleyPrice, positionInfo, productInfo, tradingConfig);
-                    } else {
-                        throw new Error(`Error, there is no ${productInfo.quoteCurrency} balance available for use. Terminating program.`);
-                    }
-
-                } catch (err) {
-                    const message = "Error occured when positionExists equals false";
-                    const errorMsg = new Error(err);
-                    logger.error({ message, errorMsg, err });
-                    process.exit(1);
+                    //Begin trying to buy a position:
+                    await gainPosition(tradeBalance, lastPeakPrice, lastValleyPrice, positionInfo, productInfo, tradingConfig);
+                } else {
+                    throw new Error(`Error, there is no ${productInfo.quoteCurrency} balance available for use. Terminating program.`);
                 }
             }
         }
     } catch (err) {
-        const message = "Error occured in momentumStrategy method.";
+        const message = "Error occured in bot, shutting down. Check the logs for more information.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
+        process.exit(1);
     }
 }
 
