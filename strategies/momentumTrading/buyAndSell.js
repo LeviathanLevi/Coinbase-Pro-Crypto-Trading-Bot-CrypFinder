@@ -4,6 +4,7 @@
 */
 const pino = require("pino");
 const logger = pino({ level: process.env.LOG_LEVEL || "info" });
+const fileSystem = require("fs");
 
 /**
  * Halts the program from running temporarily to prevent it from hitting API call limits
@@ -68,6 +69,16 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
                     throw new Error("Sell order did not complete due to being filled? done_reason: " + orderDetails.done_reason);
                 } else {
                     positionInfo.positionExists = false;
+
+                    //Update positionData file:
+                    try {
+                        const writeData = JSON.stringify(positionInfo);  
+                        fileSystem.writeFileSync("positionData.json", writeData);
+                    } catch(err) {
+                        const message = "Error, failed to write the positionInfo to the positionData file in sellPosition. Continuing as normal but but positionDataTracking might not work correctly.";
+                        const errorMsg = new Error(err);
+                        logger.error({ message, errorMsg, err });
+                    }
 
                     let profit = parseFloat(orderDetails.executed_value) - parseFloat(orderDetails.fill_fees) - positionInfo.positionAcquiredCost;
                     logger.info("Profit: " + profit);
@@ -159,7 +170,17 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
                     positionInfo.positionAcquiredPrice = parseFloat(orderDetails.executed_value) / parseFloat(orderDetails.filled_size);
                     positionInfo.positionAcquiredCost = parseFloat(orderDetails.executed_value)  + parseFloat(orderDetails.fill_fees);
 
-                    logger.info(positionInfo); //Write to file for restarting?
+                    //Update positionData file:
+                    try {
+                        const writeData = JSON.stringify(positionInfo);  
+                        fileSystem.writeFileSync("positionData.json", writeData);
+                    } catch(err) {
+                        const message = "Error, failed to write the positionInfo to the positionData file in buyPosition. Continuing as normal but but positionDataTracking might not work correctly.";
+                        const errorMsg = new Error(err);
+                        logger.error({ message, errorMsg, err });
+                    }
+
+                    logger.info(positionInfo); 
                 }
             }
         }

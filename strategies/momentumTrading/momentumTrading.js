@@ -4,6 +4,7 @@ const {buyPosition, sellPosition} = require("./buyAndSell");
 const coinbaseProLib = require("../../coinbaseProLibrary");
 const pino = require("pino");
 const logger = pino({ level: process.env.LOG_LEVEL || "info" });
+const fileSystem = require("fs");
 
 const key = `${process.env.API_KEY}`;
 const secret = `${process.env.API_SECRET}`;
@@ -377,15 +378,32 @@ async function momentumStrategyStart() {
             depositingAmount
         };
 
-        const positionInfo = {
-            positionExists: false
-        };
-
         const productInfo = {
             baseCurrency: baseCurrencyName,
             quoteCurrency: quoteCurrencyName,
             productPair: baseCurrencyName + "-" + quoteCurrencyName
         };
+
+        let positionInfo;
+
+        //Check for an existing positionData file to start the bot with:
+        try {
+            //read positionData file:
+            let rawFileData = fileSystem.readFileSync("positionData.json");
+            positionInfo = JSON.parse(rawFileData);
+        } catch (err) {
+            if (err.code === "ENOENT") {
+                logger.info("No positionData file found, starting with no existing position.");
+            } else {
+                const message = "Error, failed to read file for a reason other than it doesn't exist. Continuing as normal but positionDataTracking might not work correctly.";
+                const errorMsg = new Error(err);
+                logger.error({ message, errorMsg, err });
+            }
+
+            positionInfo = {
+                positionExists: false,
+            };
+        }
 
         //Retrieve product information:
         await getProductInfo(productInfo);

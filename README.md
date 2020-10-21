@@ -23,7 +23,7 @@ I suggest starting by using this program in the [Coinbase Pro Sandbox](https://d
 
     API_PASSPHRASE=\<your API passphrase>
 
-    Additionally consider adding LOG_LEVEL=debug if you want the full debug logs.
+    Additionally consider adding `LOG_LEVEL=debug` here if you want the full debug logs.
 
 7. Add some funds to your default portfolio and make sure there is no existing coin balance for the product you're trading.
 8. Run the program with `node index.js` from within the repo directory.
