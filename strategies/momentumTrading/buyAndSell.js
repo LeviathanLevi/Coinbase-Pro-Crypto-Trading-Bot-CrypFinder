@@ -1,3 +1,11 @@
+/*
+*   This module contains methods to buy a position and sell a position. It uses a limit order then loops checking the order
+*   status until the order either completes, OR after 1 minute it will cancel the order.
+*/
+const pino = require("pino");
+const logger = pino({ level: process.env.LOG_LEVEL || "info" });
+const fileSystem = require("fs");
+
 /**
  * Halts the program from running temporarily to prevent it from hitting API call limits
  * 
@@ -42,19 +50,19 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
             product_id: productInfo.productPair,
         };
 
-        console.log("Sell order params: " + JSON.stringify(orderParams));
+        logger.info("Sell order params: " + JSON.stringify(orderParams));
 
         //Place sell order
         const order = await authedClient.placeOrder(orderParams);
-        console.log(order);
+        logger.debug(order);
         const orderID = order.id;
 
         //Loop to wait for order to be filled:
         for (let i = 0; i < 10 && positionInfo.positionExists === true; ++i) {
-            console.log("Checking sell order result...");
+            logger.debug("Checking sell order result...");
             await sleep(6000); //wait 6 seconds
             const orderDetails = await authedClient.getOrder(orderID); //Get latest order details
-            console.log(orderDetails);
+            logger.debug(orderDetails);
 
             if (orderDetails.status === "done") {
                 if (orderDetails.done_reason !== "filled") {
@@ -62,8 +70,18 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
                 } else {
                     positionInfo.positionExists = false;
 
+                    //Update positionData file:
+                    try {
+                        const writeData = JSON.stringify(positionInfo);  
+                        fileSystem.writeFileSync("positionData.json", writeData);
+                    } catch(err) {
+                        const message = "Error, failed to write the positionInfo to the positionData file in sellPosition. Continuing as normal but but positionDataTracking might not work correctly.";
+                        const errorMsg = new Error(err);
+                        logger.error({ message, errorMsg, err });
+                    }
+
                     let profit = parseFloat(orderDetails.executed_value) - parseFloat(orderDetails.fill_fees) - positionInfo.positionAcquiredCost;
-                    console.log("Profit: " + profit);
+                    logger.info("Profit: " + profit);
 
                     if (profit > 0) {
                         //Check deposit config:
@@ -74,7 +92,7 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
                             //Transfer funds to depositProfileID
                             const transferResult = await coinbaseLibObject.profileTransfer(accountIds.tradeProfileID, accountIds.depositProfileID, currency, transferAmount);
                             
-                            console.log("transfer result: " + transferResult);
+                            logger.debug("transfer result: " + transferResult);
                         }
                     } else {
                         throw new Error("Sell was not profitable, terminating program. profit: " + profit);
@@ -94,7 +112,7 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
     } catch (err) {
         const message = "Error occured in sellPosition method.";
         const errorMsg = new Error(err);
-        console.log({ message, errorMsg, err });
+        logger.error({ message, errorMsg, err });
     }
 }
 
@@ -129,19 +147,19 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
             product_id: productInfo.productPair,
         };
 
-        console.log("Buy order params: " + JSON.stringify(orderParams));
+        logger.info("Buy order params: " + JSON.stringify(orderParams));
         
         //Place buy order
         const order = await authedClient.placeOrder(orderParams);
-        console.log(order);
+        logger.debug(order);
         const orderID = order.id;
 
         //Loop to wait for order to be filled:
         for (let i = 0; i < 10 && positionInfo.positionExists === false; ++i) {
-            console.log("Checking buy order result...");
+            logger.debug("Checking buy order result...");
             await sleep(6000); //wait 6 seconds
             const orderDetails = await authedClient.getOrder(orderID); //Get latest order details
-            console.log(orderDetails);
+            logger.debug(orderDetails);
 
             if (orderDetails.status === "done") {
                 if (orderDetails.done_reason !== "filled") {
@@ -152,7 +170,17 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
                     positionInfo.positionAcquiredPrice = parseFloat(orderDetails.executed_value) / parseFloat(orderDetails.filled_size);
                     positionInfo.positionAcquiredCost = parseFloat(orderDetails.executed_value)  + parseFloat(orderDetails.fill_fees);
 
-                    console.log(positionInfo);
+                    //Update positionData file:
+                    try {
+                        const writeData = JSON.stringify(positionInfo);  
+                        fileSystem.writeFileSync("positionData.json", writeData);
+                    } catch(err) {
+                        const message = "Error, failed to write the positionInfo to the positionData file in buyPosition. Continuing as normal but but positionDataTracking might not work correctly.";
+                        const errorMsg = new Error(err);
+                        logger.error({ message, errorMsg, err });
+                    }
+
+                    logger.info(positionInfo); 
                 }
             }
         }
@@ -168,7 +196,7 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
     } catch (err) {
         const message = "Error occured in buyPosition method.";
         const errorMsg = new Error(err);
-        console.log({ message, errorMsg, err });
+        logger.error({ message, errorMsg, err });
     }
 }
 
