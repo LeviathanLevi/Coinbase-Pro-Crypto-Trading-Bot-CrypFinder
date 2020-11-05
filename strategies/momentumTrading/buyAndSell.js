@@ -48,6 +48,7 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
             price: priceToSell, 
             size: orderSize,
             product_id: productInfo.productPair,
+            time_in_force: "FOK"
         };
 
         logger.info("Sell order params: " + JSON.stringify(orderParams));
@@ -145,6 +146,7 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
             price: priceToBuy, 
             size: orderSize, 
             product_id: productInfo.productPair,
+            time_in_force: "FOK"
         };
 
         logger.info("Buy order params: " + JSON.stringify(orderParams));
