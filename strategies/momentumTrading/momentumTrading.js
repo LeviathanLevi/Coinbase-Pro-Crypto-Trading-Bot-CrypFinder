@@ -12,7 +12,7 @@ const passphrase = `${process.env.API_PASSPHRASE}`;
  
 //******************** Setup these value configurations before running the program ******************************************
 
-//Real environment (uncomment out if using in the real enviornment WARNING: you can lose real money, use at your own risk):
+//Real environment (uncomment out if using in the real environment WARNING: you can lose real money, use at your own risk):
 //const apiURI = "https://api.pro.coinbase.com";
 //const websocketURI = "wss://ws-feed.pro.coinbase.com";
 
@@ -64,7 +64,7 @@ let currentPrice;
 /**
  * Makes the program sleep to avoid hitting API limits and let the websocket update
  * 
- * @param {number} ms -> the number of miliseconds to wait 
+ * @param {number} ms -> the number of milliseconds to wait 
  */
 function sleep(ms) {
     return new Promise((resolve) => {
@@ -96,7 +96,7 @@ function listenForPriceUpdates(productPair) {
 
     //turn on the websocket for errors
     websocket.on("error", function(err) {
-        const message = "Error occured in the websocket.";
+        const message = "Error occurred in the websocket.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
         listenForPriceUpdates(productPair);
@@ -121,8 +121,8 @@ function listenForPriceUpdates(productPair) {
 
 /**
  * Loops forever until the conditions are right to attempt to sell the position. Every loop sleeps to let the currentPrice update
- * then updates the lastPeak/lastValley price as appropiate, if the price hits a new valley price it will check if the conditions are 
- * met to sell the position and call the method if appropiate.
+ * then updates the lastPeak/lastValley price as appropriate, if the price hits a new valley price it will check if the conditions are 
+ * met to sell the position and call the method if appropriate.
  * 
  * @param {number} balance              The amount of currency being traded with
  * @param {number} lastPeakPrice        Tracks the price highs
@@ -130,7 +130,7 @@ function listenForPriceUpdates(productPair) {
  * @param {Object} accountIds           The coinbase account ID associated with the API key used for storing a chunk of the profits in coinbase
  * @param {Object} positionInfo         Contains 3 fields, positionExists (bool), positionAcquiredPrice (number), and positionAcquiredCost(number)
  * @param {Object} productInfo          Contains information about the quote/base increment for the product pair
- * @param {Object} depositConfig        Conatins information about whether to do a deposit and for how much after a sell
+ * @param {Object} depositConfig        Contains information about whether to do a deposit and for how much after a sell
  * @param {Object} tradingConfig        Contains information about the fees and deltas 
  */
 async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds, positionInfo, productInfo, depositConfig, tradingConfig) {
@@ -169,7 +169,7 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds,
             }
         }
     } catch (err) {
-        const message = "Error occured in losePosition method.";
+        const message = "Error occurred in losePosition method.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
         throw err;
@@ -178,8 +178,8 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds,
 
 /**
  * Loops forever until the conditions are right to attempt to buy a position. Every loop sleeps to let the currentPrice update
- * then updates the lastPeak/lastValley price as appropiate, if the price hits a new peak price it will check if the conditions are 
- * met to buy the position and call the method if appropiate.
+ * then updates the lastPeak/lastValley price as appropriate, if the price hits a new peak price it will check if the conditions are 
+ * met to buy the position and call the method if appropriate.
  * 
  * @param {number} balance              The amount of currency being traded with
  * @param {number} lastPeakPrice        Tracks the price highs
@@ -224,7 +224,7 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, positionInf
             }
         }
     } catch (err) {
-        const message = "Error occured in gainPosition method.";
+        const message = "Error occurred in gainPosition method.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
         throw err;
@@ -320,7 +320,7 @@ async function getProductInfo(productInfo) {
         productInfo.quoteIncrementRoundValue = Number(quoteIncrementRoundValue);
         productInfo.baseIncrementRoundValue = Number(baseIncrementRoundValue);
     } catch (err) {
-        const message = "Error occured in getProfuctInfo method.";
+        const message = "Error occurred in getProductInfo method.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
         throw err;
@@ -346,7 +346,7 @@ async function returnHighestFee(){
         }
     }
     catch (err) {
-        const message = "Error occured in getFees method.";
+        const message = "Error occurred in getFees method.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
         throw err;
@@ -463,7 +463,7 @@ async function momentumStrategyStart() {
             }
         }
     } catch (err) {
-        const message = "Error occured in bot, shutting down. Check the logs for more information.";
+        const message = "Error occurred in bot, shutting down. Check the logs for more information.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
         process.exit(1);
