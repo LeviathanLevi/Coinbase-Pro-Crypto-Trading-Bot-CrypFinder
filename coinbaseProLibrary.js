@@ -68,7 +68,7 @@ class coinbaseProLib {
 
             return result;
         } catch (err) {
-            const message = "Error occured in signMessage method.";
+            const message = "Error occurred in signMessage method.";
             const errorMsg = new Error(err);
             logger.error({ message, errorMsg, err });
             throw err;
@@ -76,7 +76,7 @@ class coinbaseProLib {
     }
 
     /**
-     * Calls the endpoint /profiles to get a list of the avaiable portfolio (profile) IDs for the account
+     * Calls the endpoint /profiles to get a list of the available portfolio (profile) IDs for the account
      * Check the documentation for more information on this endpoint.
      * 
      * @return {string} API call response data
@@ -110,7 +110,7 @@ class coinbaseProLib {
                 if (attempts < numberOfAttempts - 1) {
                     attempts++;
                 } else {
-                    const message = "Error occured in getProfiles method. Number of attempts: " + numberOfAttempts;
+                    const message = "Error occurred in getProfiles method. Number of attempts: " + numberOfAttempts;
                     const errorMsg = new Error(err);
                     logger.error({ message, errorMsg, err });
                     throw err;
@@ -156,7 +156,7 @@ class coinbaseProLib {
                 if (attempts < numberOfAttempts - 1) {
                     attempts++;
                 } else {
-                    const message = "Error occured in getFees method. Number of attempts: " + numberOfAttempts;
+                    const message = "Error occurred in getFees method. Number of attempts: " + numberOfAttempts;
                     const errorMsg = new Error(err);
                     logger.error({ message, errorMsg, err });
                     throw err;
@@ -214,7 +214,7 @@ class coinbaseProLib {
                 if (attempts < numberOfAttempts - 1) {
                     attempts++;
                 } else {
-                    const message = "Error occured in profileTransfer method. Number of attempts: " + numberOfAttempts;
+                    const message = "Error occurred in profileTransfer method. Number of attempts: " + numberOfAttempts;
                     const errorMsg = new Error(err);
                     logger.error({ message, errorMsg, err });
                     throw err;

@@ -110,7 +110,7 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
         }
 
     } catch (err) {
-        const message = "Error occured in sellPosition method.";
+        const message = "Error occurred in sellPosition method.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
     }
@@ -194,7 +194,7 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
         }
 
     } catch (err) {
-        const message = "Error occured in buyPosition method.";
+        const message = "Error occurred in buyPosition method.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
     }
