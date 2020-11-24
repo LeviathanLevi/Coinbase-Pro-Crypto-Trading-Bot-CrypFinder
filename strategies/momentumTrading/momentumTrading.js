@@ -35,7 +35,7 @@ const quoteCurrencyName = "USD";
 //Profile config:
 //Coinbase portfolios (profiles):
 const tradingProfileName = "BTC trader"; //This is the name of the profile you want the bot to trade in
-const depositProfileName = "default"; //This is the name of the profile you want to deposit some profits to
+const depositProfileName = "default1"; //This is the name of the profile you want to deposit some profits to
 
 //Deposit config:
 const depositingEnabled = true; //Choose whether or not you want you want to deposit a cut of the profits (Options: true/false)
@@ -263,6 +263,14 @@ async function getAccountIDs(productInfo) {
             }
         }
 
+        if (!accountObject.depositProfileID) {
+            throw new Error(`Could not find the deposit profile ID. Ensure that the depositProfileName: "${depositProfileName}" is spelt correctly.`)
+        }
+        
+        if (!accountObject.tradeProfileID) {
+            throw new Error(`Could not find the trade profile ID. Ensure that the tradingProfileName: "${tradingProfileName}" is spelt correctly.`)
+        }
+
         return accountObject;
     } catch (err) {
         const message = "Error occured in getAccountIDs method.";
@@ -294,7 +302,7 @@ async function getProductInfo(productInfo) {
         }
         
         if (productPairData === undefined) {
-            throw new Error(`Error, could not find a valid matching product pair for "${productInfo.productPair}". Verify the name is correct.`);
+            throw new Error(`Error, could not find a valid matching product pair for "${productInfo.productPair}". Verify the product names is correct/exists.`);
         }
 
         for (let i = 2; i < productPairData.quote_increment.length; ++i) {
