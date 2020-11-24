@@ -1,55 +1,40 @@
 require('dotenv').config()
 const pino = require("pino");
 const logger = pino({ level: process.env.LOG_LEVEL || "info" });
-const fileSystem = require("fs");
-const csv = require("csv-parser");
+const fileSystem = require("fs").promises;
+const csvParser = require("csv-parse/lib/sync");
 
-/**
- * Loops forever until the conditions are right to attempt to sell the position. Every loop sleeps to let the currentPrice update
- * then updates the lastPeak/lastValley price as appropiate, if the price hits a new valley price it will check if the conditions are 
- * met to sell the position and call the method if appropiate.
- * 
- * @param {number} balance              The amount of currency being traded with
- * @param {number} lastPeakPrice        Tracks the price highs
- * @param {number} lastValleyPrice      Tracks the price lows
- * @param {Object} accountIds           The coinbase account ID associated with the API key used for storing a chunk of the profits in coinbase
- * @param {Object} positionInfo         Contains 3 fields, positionExists (bool), positionAcquiredPrice (number), and positionAcquiredCost(number)
- * @param {Object} productInfo          Contains information about the quote/base increment for the product pair
- * @param {Object} depositConfig        Conatins information about whether to do a deposit and for how much after a sell
- * @param {Object} tradingConfig        Contains information about the fees and deltas 
- */
-async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds, positionInfo, productInfo, depositConfig, tradingConfig) {
+/********************/
+
+async function losePosition(positionInfo, tradingConfig, priceInfo, result) {
     try {
-        while (positionInfo.positionExists === true) {
-            await sleep(250); //Let price update
-    
-            if (lastPeakPrice < currentPrice) {
-                //New peak hit, reset values
-                lastPeakPrice = currentPrice;
-                lastValleyPrice = currentPrice;
-    
-                logger.debug(`Sell Position, LPP: ${lastPeakPrice}`);
-            } else if (lastValleyPrice > currentPrice) {
-                //New valley hit, track valley and check sell conditions
-                lastValleyPrice = currentPrice;
-    
-                const target = lastPeakPrice - (lastPeakPrice * sellPositionDelta);
-                const minimum = positionInfo.positionAcquiredPrice + (positionInfo.positionAcquiredPrice * (sellPositionProfitDelta + (tradingConfig.highestFee * 2)));
-    
-                logger.debug(`Sell Position, LVP: ${lastValleyPrice} needs to be less than or equal to ${target} and greater than or equal to ${minimum} to sell`);
-    
-                if ((lastValleyPrice <= target) && (lastValleyPrice >= minimum)) {
-                    logger.info("Attempting to sell position...");
+        if (priceInfo.lastPeakPrice < priceInfo.currentPrice) {
+            //New peak hit, reset values
+            priceInfo.lastPeakPrice = priceInfo.currentPrice;
+            priceInfo.lastValleyPrice = priceInfo.currentPrice;
+        } else if (priceInfo.lastValleyPrice > priceInfo.currentPrice) {
+            //New valley hit, track valley and check sell conditions
+            priceInfo.lastValleyPrice = priceInfo.currentPrice;
 
-                    //Create a new authenticated client to prevent it from expiring or hitting API limits
-                    authedClient = new CoinbasePro.AuthenticatedClient(
-                        key,
-                        secret,
-                        passphrase,
-                        apiURI
-                    );
+            const target = priceInfo.lastPeakPrice - (priceInfo.lastPeakPrice * tradingConfig.sellPositionDelta);
+            const minimum = positionInfo.positionAcquiredPrice + (positionInfo.positionAcquiredPrice * (tradingConfig.sellPositionProfitDelta + (tradingConfig.highestFee * 2)));
 
-                    await sellPosition(balance, accountIds, positionInfo, lastValleyPrice, authedClient, coinbaseLibObject, productInfo, depositConfig, tradingConfig);
+            if ((priceInfo.lastValleyPrice <= target) && (priceInfo.lastValleyPrice >= minimum)) {
+                //Sell position:
+                result.numberOfSells += 1;
+                
+                if (tradingConfig.depositingEnabled) {
+                    const profit = (positionInfo.assetAmount * priceInfo.currentPrice) - (tradingConfig.highestFee * tradingConfig.startingBalance) - positionInfo.positionAcquiredCost;
+                    result.deposits += profit;
+                    positionInfo.fiatBalance = (positionInfo.assetAmount * priceInfo.currentPrice) - ((positionInfo.assetAmount * priceInfo.currentPrice) * tradingConfig.highestFee) - profit;
+                    positionInfo.assetAmount = 0;
+                    result.finalPosition = {};
+                    positionInfo.positionExists = false;
+                } else {
+                    positionInfo.fiatBalance = (positionInfo.assetAmount * priceInfo.currentPrice) - ((positionInfo.assetAmount * priceInfo.currentPrice) * tradingConfig.highestFee);
+                    positionInfo.assetAmount = 0;
+                    result.finalPosition = null;
+                    positionInfo.positionExists = false;
                 }
             }
         }
@@ -61,52 +46,29 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds,
     }
 }
 
-/**
- * Loops forever until the conditions are right to attempt to buy a position. Every loop sleeps to let the currentPrice update
- * then updates the lastPeak/lastValley price as appropiate, if the price hits a new peak price it will check if the conditions are 
- * met to buy the position and call the method if appropiate.
- * 
- * @param {number} balance              The amount of currency being traded with
- * @param {number} lastPeakPrice        Tracks the price highs
- * @param {number} lastValleyPrice      Tracks the price lows
- * @param {Object} positionInfo         Contains 3 fields, positionExists (bool), positionAcquiredPrice (number), and positionAcquiredCost(number)
- * @param {Object} productInfo          Contains information about the quote/base increment for the product pair
- * @param {Object} tradingConfig        Contains information about the fees and deltas 
- */
-async function gainPosition(balance, lastPeakPrice, lastValleyPrice, positionInfo, productInfo, tradingConfig) {
+async function gainPosition(positionInfo, tradingConfig, priceInfo, result) {
     try {
-        while (positionInfo.positionExists === false) {
-            await sleep(250); //Let price update
-            
-            if (lastPeakPrice < currentPrice) {
-                //New peak hit, track peak price and check buy conditions
-                lastPeakPrice = currentPrice;
-    
-                const target = lastValleyPrice + (lastValleyPrice * buyPositionDelta);
-    
-                logger.debug(`Buy Position, LPP: ${lastPeakPrice} needs to be greater than or equal to ${target} to buy`);
-    
-                if (lastPeakPrice >= target) {
-                    logger.info("Attempting to buy position...");
-                    
-                    //Create a new authenticated client to prevent it from expiring or hitting API limits
-                    authedClient = new CoinbasePro.AuthenticatedClient(
-                        key,
-                        secret,
-                        passphrase,
-                        apiURI
-                    );
+        if (priceInfo.lastPeakPrice < priceInfo.currentPrice) {
+            //New peak hit, track peak price and check buy conditions
+            priceInfo.lastPeakPrice = priceInfo.currentPrice;
 
-                    await buyPosition(balance, positionInfo, lastPeakPrice, authedClient, productInfo, tradingConfig);
-                }
-            } else  if (lastValleyPrice > currentPrice) {
-                //New valley hit, reset values
+            const target = priceInfo.lastValleyPrice + (priceInfo.lastValleyPrice * tradingConfig.buyPositionDelta);
 
-                lastPeakPrice = currentPrice;
-                lastValleyPrice = currentPrice;
-    
-                logger.debug(`Buy Position, LVP: ${lastValleyPrice}`);
+            if (priceInfo.lastPeakPrice >= target) {
+                result.numberOfBuys += 1;
+
+                positionInfo.positionAcquiredCost = positionInfo.fiatBalance;
+                positionInfo.assetAmount = (positionInfo.fiatBalance - (positionInfo.fiatBalance * tradingConfig.highestFee)) * priceInfo.currentPrice;
+                positionInfo.fiatBalance = 0;
+                positionInfo.positionExists = true;
+
+                result.finalPosition = positionInfo;
             }
+
+        } else if (priceInfo.lastValleyPrice > priceInfo.currentPrice) {
+            //New valley hit, reset values
+            priceInfo.lastPeakPrice = priceInfo.currentPrice;
+            priceInfo.lastValleyPrice = priceInfo.currentPrice;
         }
     } catch (err) {
         const message = "Error occured in gainPosition method.";
@@ -117,9 +79,7 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, positionInf
 }
 
 /**
- * This method is the entry point of the momentum strategy. It does some first time initialization then begins an infinite loop.
- * The loop checks the position info to decide if the bot needs to try and buy or sell, it also checks if there's an available 
- * balance to be traded with. Then it calls gainPosition or losePosition appropiately and waits for them to finish and repeats.
+ * 
  */
 async function momentumStrategyAnalyzerStart() {
     try {
@@ -130,13 +90,14 @@ async function momentumStrategyAnalyzerStart() {
             buyPositionDelta: .005,
             orderPriceDelta: .0015,
             highestFee: .5,
-            depositingEnabled: false,
-            depositingAmount: 0
+            depositingEnabled: false
         };
 
         const dataFileName = "btcusd.csv";
 
         const result = await analyzeStrategy(tradingConfig, dataFileName);
+
+        logger.info(result);
         
     } catch (err) {
         const message = "Error occured in momentumStrategyAnalyzerStart method, shutting down. Check the logs for more information.";
@@ -148,34 +109,58 @@ async function momentumStrategyAnalyzerStart() {
 
 async function analyzeStrategy(tradingConfig, dataFileName) {
     try {
-        let result = {};
-        let completed = false;
+        let result = {
+            numberOfBuys: 0,
+            numberOfSells: 0,
+            amountOfProfitGenerated: 0,
+            finalCash: 0,
+            finalPosition: {},
+            deposits: 0
+        };
         let positionInfo = {
-            positionExists: false
+            positionExists: false,
+            fiatBalance: tradingConfig.startingBalance
         }
 
-        fileSystem.fstat.createReadStream(dataFileName)
-        .pipe(csv())
-        .on("data", (row) => {
-            console.log(row);
-        })
-        .on("end", () => {
-            console.log("End");
-        });
+        const fileContent = await fileSystem.readFile(dataFileName);
+        const records = csvParser(fileContent, {columns: true});
+        
+        const priceInfo = {
+            currentPrice: parseFloat(records[0].high),
+            lastPeakPrice: parseFloat(records[0].high),
+            lastValleyPrice: parseFloat(records[0].high)
+        };
 
-        // eslint-disable-next-line no-constant-condition
-        while (!completed) {
+        for (let i = 1; i < records.length; ++i) {
+            priceInfo.currentPrice = records[i].high;
+
             if (positionInfo.positionExists) {
-
-                
-                await losePosition(parseFloat(baseCurrencyAccount.available), lastPeakPrice, lastValleyPrice, accountIDs, positionInfo, productInfo, depositConfig, tradingConfig);
-
+                await losePosition(positionInfo, tradingConfig, priceInfo, result);
             } else {
-
-
-                await gainPosition(tradeBalance, lastPeakPrice, lastValleyPrice, positionInfo, productInfo, tradingConfig);
-
+                await gainPosition(positionInfo, tradingConfig, priceInfo, result);
             }
+        }
+
+        if (result.finalPosition){
+            result.numberOfSells += 1;
+                
+            if (tradingConfig.depositingEnabled) {
+                const profit = (positionInfo.assetAmount * priceInfo.currentPrice) - (tradingConfig.highestFee * tradingConfig.startingBalance) - positionInfo.positionAcquiredCost;
+                result.deposits += profit;
+                positionInfo.fiatBalance = (positionInfo.assetAmount * priceInfo.currentPrice) - ((positionInfo.assetAmount * priceInfo.currentPrice) * tradingConfig.highestFee) - profit;
+                positionInfo.assetAmount = 0;
+                result.finalPosition = {};
+            } else {
+                positionInfo.fiatBalance = (positionInfo.assetAmount * priceInfo.currentPrice) - ((positionInfo.assetAmount * priceInfo.currentPrice) * tradingConfig.highestFee);
+                positionInfo.assetAmount = 0;
+                result.finalPosition = null;
+            }
+        }
+
+        if (tradingConfig.depositingEnabled) {
+            result.amountOfProfitGenerated = result.deposits;
+        } else {
+            result.amountOfProfitGenerated = positionInfo.fiatBalance - tradingConfig.startingBalance;
         }
 
         return result;

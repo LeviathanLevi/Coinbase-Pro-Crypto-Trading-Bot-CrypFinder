@@ -4,8 +4,8 @@
 *   a command line interface here for controlling it.
 */
 const momentumStrategyStart = require("./strategies/momentumTrading/momentumTrading");
-
+const momentumStrategyAnalyzerStart = require("./strategies/momentumTrading/momentumTradingAnalyzer");
 //Make sure to configure the momentumStrategy in ./strategies/momentumTrading/momentumTrading.js before launching
 
 //Launches the momentum strategy and starts the bot:
-momentumStrategyStart();
+momentumStrategyAnalyzerStart();

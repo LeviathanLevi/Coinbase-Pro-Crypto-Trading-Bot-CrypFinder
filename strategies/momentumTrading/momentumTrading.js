@@ -25,7 +25,7 @@ const websocketURI = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 const sellPositionProfitDelta = .01; //Minimum amount of money needed to be made before selling position the program will account for taker and maker fees as well
 const sellPositionDelta = .005; //The amount of change between peak and valley to trigger a sell off
 const buyPositionDelta = .005; //The amount of change between the peak and valley price to trigger a buy in
-const orderPriceDelta = .0025; //The amount of extra room to give the sell/buy orders to go through
+const orderPriceDelta = .0015; //The amount of extra room to give the sell/buy orders to go through
 
 //Currency config:
 //The pieces of the product pair, this is the two halves of coinbase product pair (examples of product pairs: BTC-USD, DASH-BTC, ETH-USDC). For BTC-USD the base currency is BTC and the quote currency is USD 
@@ -35,7 +35,7 @@ const quoteCurrencyName = "USD";
 //Profile config:
 //Coinbase portfolios (profiles):
 const tradingProfileName = "BTC trader"; //This is the name of the profile you want the bot to trade in
-const depositProfileName = "default1"; //This is the name of the profile you want to deposit some profits to
+const depositProfileName = "default"; //This is the name of the profile you want to deposit some profits to
 
 //Deposit config:
 const depositingEnabled = true; //Choose whether or not you want you want to deposit a cut of the profits (Options: true/false)
@@ -214,7 +214,7 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, positionInf
 
                     await buyPosition(balance, positionInfo, lastPeakPrice, authedClient, productInfo, tradingConfig);
                 }
-            } else  if (lastValleyPrice > currentPrice) {
+            } else if (lastValleyPrice > currentPrice) {
                 //New valley hit, reset values
 
                 lastPeakPrice = currentPrice;
@@ -266,8 +266,7 @@ async function getAccountIDs(productInfo) {
         if (!accountObject.depositProfileID) {
             throw new Error(`Could not find the deposit profile ID. Ensure that the depositProfileName: "${depositProfileName}" is spelt correctly.`)
         }
-        
-        if (!accountObject.tradeProfileID) {
+        if (accountObject.tradeProfileID) {
             throw new Error(`Could not find the trade profile ID. Ensure that the tradingProfileName: "${tradingProfileName}" is spelt correctly.`)
         }
 
