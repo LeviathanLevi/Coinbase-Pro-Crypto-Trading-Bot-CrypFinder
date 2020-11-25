@@ -87,21 +87,51 @@ async function gainPosition(positionInfo, tradingConfig, priceInfo, result) {
 
 async function momentumStrategyAnalyzerStart() {
     try {
+        const dataFileName = "btcusd.csv";
+
         const tradingConfig = {
             startingBalance: 500,
-            sellPositionProfitDelta: .01,
-            sellPositionDelta: .03,
-            buyPositionDelta: .01,
+            sellPositionProfitDelta: .0016,
+            sellPositionDelta: .001,
+            buyPositionDelta: .001,
             orderPriceDelta: .0015,
             highestFee: .005,
             depositingEnabled: false
         };
 
-        const dataFileName = "btcusd.csv";
+        let sellPositionProfitDelta = [.0016, .005, .01, .025, .05];
+        let sellPositionDelta = .001;
+        let buyPositionDelta = .001;
 
+        let highestProfit = {};
+        
         const result = await analyzeStrategy(tradingConfig, dataFileName);
+        highestProfit.result = result;
+        highestProfit.tradingConfig = tradingConfig;
 
-        logger.info(result);
+        for (let i = 0; i < 5; i += 1) {
+            tradingConfig.sellPositionProfitDelta = sellPositionProfitDelta[i];
+
+            for (let j = 0; j < 49; j += 1) {
+                sellPositionDelta += .001;
+                tradingConfig.sellPositionDelta = sellPositionDelta;
+
+                for (let k = 0; k < 49; k += 1) {
+                    buyPositionDelta += .001; 
+                    tradingConfig.sellPositionDelta = buyPositionDelta;
+
+                    const result = await analyzeStrategy(tradingConfig, dataFileName);
+
+                    if (highestProfit.result.amountOfProfitGenerated < result.amountOfProfitGenerated) {
+                        logger.info(`New highest found`);
+                        highestProfit.result = result;
+                        highestProfit.tradingConfig = tradingConfig;
+                    }
+                }   
+            }
+        }
+
+        logger.info(highestProfit);
         
     } catch (err) {
         const message = "Error occured in momentumStrategyAnalyzerStart method, shutting down. Check the logs for more information.";
