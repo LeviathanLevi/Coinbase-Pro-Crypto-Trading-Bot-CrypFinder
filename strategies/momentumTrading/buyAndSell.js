@@ -73,7 +73,7 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
 
                     //Update positionData file:
                     try {
-                        const writeData = JSON.stringify(positionInfo);  
+                        const writeData = JSON.stringify(positionInfo);
                         fileSystem.writeFileSync("positionData.json", writeData);
                     } catch(err) {
                         const message = "Error, failed to write the positionInfo to the positionData file in sellPosition. Continuing as normal but but positionDataTracking might not work correctly.";
@@ -170,11 +170,11 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
                     //Update position info
                     positionInfo.positionExists = true;
                     positionInfo.positionAcquiredPrice = parseFloat(orderDetails.executed_value) / parseFloat(orderDetails.filled_size);
-                    positionInfo.positionAcquiredCost = parseFloat(orderDetails.executed_value)  + parseFloat(orderDetails.fill_fees);
+                    positionInfo.positionAcquiredCost = parseFloat(orderDetails.executed_value) + parseFloat(orderDetails.fill_fees);
 
                     //Update positionData file:
                     try {
-                        const writeData = JSON.stringify(positionInfo);  
+                        const writeData = JSON.stringify(positionInfo);
                         fileSystem.writeFileSync("positionData.json", writeData);
                     } catch(err) {
                         const message = "Error, failed to write the positionInfo to the positionData file in buyPosition. Continuing as normal but but positionDataTracking might not work correctly.";

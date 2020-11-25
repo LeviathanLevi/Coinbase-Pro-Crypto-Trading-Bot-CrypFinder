@@ -266,7 +266,7 @@ async function getAccountIDs(productInfo) {
         if (!accountObject.depositProfileID) {
             throw new Error(`Could not find the deposit profile ID. Ensure that the depositProfileName: "${depositProfileName}" is spelt correctly.`)
         }
-        if (accountObject.tradeProfileID) {
+        if (!accountObject.tradeProfileID) {
             throw new Error(`Could not find the trade profile ID. Ensure that the tradingProfileName: "${tradingProfileName}" is spelt correctly.`)
         }
 

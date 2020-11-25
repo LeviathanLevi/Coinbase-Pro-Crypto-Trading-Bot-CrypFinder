@@ -8,4 +8,7 @@ const momentumStrategyAnalyzerStart = require("./strategies/momentumTrading/mome
 //Make sure to configure the momentumStrategy in ./strategies/momentumTrading/momentumTrading.js before launching
 
 //Launches the momentum strategy and starts the bot:
+//momentumStrategyStart();
+
+//Launches the momentum strategy anaylzer for back testing:
 momentumStrategyAnalyzerStart();
