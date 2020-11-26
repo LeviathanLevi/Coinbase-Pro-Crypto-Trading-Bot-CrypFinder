@@ -57,6 +57,7 @@ async function losePosition(positionInfo, tradingConfig, priceInfo, report) {
                 if (tradingConfig.depositingEnabled) {
                     const profit = (positionInfo.assetAmount * priceInfo.currentPrice) - (tradingConfig.highestFee * (positionInfo.assetAmount * priceInfo.currentPrice)) - positionInfo.positionAcquiredCost;
                     report.amountOfProfitGenerated += profit;
+                    logger.debug(`amount of profit: ${report.amountOfProfitGenerated}`);
 
                     logger.debug(`profit: ${profit}`);
 
@@ -70,7 +71,7 @@ async function losePosition(positionInfo, tradingConfig, priceInfo, report) {
                 positionInfo.positionAcquiredPrice = 0;
                 positionInfo.positionAcquiredCost = 0;
 
-                logger.debug(`Position info after sell: ${positionInfo}`);
+                logger.debug(`Position info after sell: ${JSON.stringify(positionInfo)}`);
             }
         }
     } catch (err) {
@@ -107,7 +108,7 @@ async function gainPosition(positionInfo, tradingConfig, priceInfo, report) {
                 positionInfo.fiatBalance = 0;
                 positionInfo.positionExists = true;
 
-                logger.debug(`Position info after buy: ${positionInfo}`);
+                logger.debug(`Position info after buy: ${JSON.stringify(positionInfo)}`);
             }
         } else if (priceInfo.lastValleyPrice > priceInfo.currentPrice) {
             priceInfo.lastPeakPrice = priceInfo.currentPrice;
@@ -135,6 +136,7 @@ async function momentumStrategyAnalyzerStart() {
         //Instead of running it once someone could configure it to run loops for a given range of values to find the most optimal config
         //Just setup the tradingConfig to be your starting values then let the loops increment the values and run the report then compare for the most profitable
         //Example: 
+
         // let highestProfit = {};
         // let tradingConfigCopy = tradingConfig;
 
@@ -143,25 +145,27 @@ async function momentumStrategyAnalyzerStart() {
         // highestProfit.report = report;
         // highestProfit.configuration = tradingConfig;
 
-        // for (let i = 0; i < 50; i += 1) {
+        // for (let i = 0; i < 80; i += 1) {
         //     tradingConfigCopy.buyPositionDelta = tradingConfig.buyPositionDelta;
 
-        //     for (let j = 0; j < 50; j += 1) {
+        //     for (let j = 0; j < 80; j += 1) {
+        //         logger.debug(tradingConfig);
+
         //         const report = await analyzeStrategy(tradingConfigCopy, dataFileName);
 
         //         if (highestProfit.report.amountOfProfitGenerated < report.amountOfProfitGenerated) {
         //             highestProfit.report = report;
-        //             highestProfit.tradingConfig = tradingConfig;
+        //             highestProfit.configuration = tradingConfig;
 
         //             logger.info(highestProfit);
         //         }
 
-        //         tradingConfigCopy.buyPositionDelta += .001; 
+        //         tradingConfigCopy.buyPositionDelta += .0005; 
         //     }  
             
-        //     tradingConfigCopy.sellPositionDelta += .001;
+        //     tradingConfigCopy.sellPositionDelta += .0005;
         // }
-        
+
     } catch (err) {
         const message = "Error occured in momentumStrategyAnalyzerStart method, shutting down. Check the logs for more information.";
         const errorMsg = new Error(err);
@@ -208,7 +212,7 @@ async function analyzeStrategy(tradingConfig, dataFileName) {
         }
 
         if (positionInfo.positionExists) {
-            report.amountOfProfitGenerated = ((positionInfo.assetAmount * priceInfo.currentPrice) - ((positionInfo.assetAmount * priceInfo.currentPrice) * tradingConfig.highestFee)) - tradingConfig.startingBalance;
+            report.amountOfProfitGenerated += ((positionInfo.assetAmount * priceInfo.currentPrice) - ((positionInfo.assetAmount * priceInfo.currentPrice) * tradingConfig.highestFee)) - tradingConfig.startingBalance;
         } else {
             if (!tradingConfig.depositingEnabled) {
                 report.amountOfProfitGenerated = positionInfo.fiatBalance - tradingConfig.startingBalance;

@@ -44,6 +44,9 @@ If at any point the bot stops running for any reason, the the bot keeps a file c
 ## Running the program out of sandbox:
 When you're confident in the configuration/code base and want to run it in the real environment, comment out the sandbox env variables and uncomment out the real API URI variables. Update the .env file with a valid API key. You can run this program on your own machine or consider using a server such as an AWS EC2 instance with an EIP (you need to whitelist the API IP). AWS EC2 offers a free tier instance for a year that works well for hosting.
 
+## Momentum trading strategy analyzer:
+The momentumTradingAnalyzer is a way to run data against the momentum trading bot strategy to see how well it performs. It takes in a .csv file with OHLC data. Carston Klein has already compiled a massive dataset that is perfect for this taskm available for free on kaggle [check it out](https://www.kaggle.com/tencars/392-crypto-currency-pairs-at-minute-resolution?select=ampusd.csv). After downloading the file for the coin data you want, just trim the .csv file to the length of time you want to test and run the analyzer with the configuration you want and it will generate a report showing how it did. He also wrote [this article](https://medium.com/coinmonks/how-to-get-historical-crypto-currency-data-954062d40d2d) on how to get similar data yourself.
+
 ## Helpful links:
 [Coinbase Pro](https://pro.coinbase.com/trade/BTC-USD)
 
