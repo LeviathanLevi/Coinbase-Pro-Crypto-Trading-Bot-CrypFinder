@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+
 /*
 *   This is the entry point of program. Currently, there is just one strategy but this will be the place where
 *   a specific strategy would be selected to start the program with. In the future, this project could use  
@@ -8,7 +10,7 @@ const momentumStrategyAnalyzerStart = require("./strategies/momentumTrading/mome
 //Make sure to configure the momentumStrategy in ./strategies/momentumTrading/momentumTrading.js before launching
 
 //Launches the momentum strategy and starts the bot:
-//momentumStrategyStart();
+momentumStrategyStart();
 
 //Launches the momentum strategy anaylzer for back testing:
-momentumStrategyAnalyzerStart();
+//momentumStrategyAnalyzerStart();

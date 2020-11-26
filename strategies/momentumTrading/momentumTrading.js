@@ -22,9 +22,8 @@ const websocketURI = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 
 //Trading config:
 //Global constants, consider tuning these values to optimize the bot's trading: 
-const sellPositionProfitDelta = .0005; //Minimum amount of money needed to be made before selling position the program will account for taker and maker fees as well
-const sellPositionDelta = .002; //The amount of change between peak and valley to trigger a sell off
-const buyPositionDelta = .0015; //The amount of change between the peak and valley price to trigger a buy in
+const sellPositionDelta = .02; //The amount of change between peak and valley to trigger a sell off
+const buyPositionDelta = .015; //The amount of change between the peak and valley price to trigger a buy in
 const orderPriceDelta = .001; //The amount of extra room to give the sell/buy orders to go through
 
 //Currency config:
@@ -374,7 +373,6 @@ async function momentumStrategyStart() {
         let highestFee = await returnHighestFee();
 
         const tradingConfig = {
-            sellPositionProfitDelta,
             sellPositionDelta,
             buyPositionDelta,
             orderPriceDelta,

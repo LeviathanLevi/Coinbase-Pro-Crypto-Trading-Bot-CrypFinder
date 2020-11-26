@@ -1,34 +1,64 @@
+/*  
+ * Summary: The momentumTradingAnalyzer reads a CSV file for prices and runs the bot with a given configuration.
+ * After processing all of the price history the analyzer gives report containing how much profit it made, how many trades
+ * it made, etc. This can be used to test the bot against historical date and get an idea of how it performs with a specfic setup.
+ * Consider creating a loop to test a range of values and let the analyzer figure out the most optimal trade configuration.
+ * 
+ * For more information regarding the type of data and files that it's setup to use, see the readme.
+ */
 require('dotenv').config()
 const pino = require("pino");
 const logger = pino({ level: process.env.LOG_LEVEL || "info" });
 const fileSystem = require("fs").promises;
 const csvParser = require("csv-parse/lib/sync");
 
-async function losePosition(positionInfo, tradingConfig, priceInfo, result) {
+//***************Trade configuration*****************
+
+//The name of the file containing the data to be tested:
+const dataFileName = "btcusd.csv"; 
+
+//The bot trading config values (See momentumTrading.js for more information on these values):
+const tradingConfig = {
+    startingBalance: 500,       //Amount of cash the bot starts with
+    sellPositionDelta: .0001,    
+    buyPositionDelta: .0001,
+    orderPriceDelta: .001,
+    highestFee: .005,
+    depositingEnabled: false    //Whether or not the profits are deposited or re-invested
+}; 
+  
+//***************************************************
+
+/**
+ * See losePosition in momentumTrading.js for more information, this is the same but for the analyzer
+ * 
+ * @param {object} positionInfo 
+ * @param {object} tradingConfig 
+ * @param {object} priceInfo 
+ * @param {object} report 
+ */
+async function losePosition(positionInfo, tradingConfig, priceInfo, report) {
     try {
         if (priceInfo.lastPeakPrice < priceInfo.currentPrice) {
-            //New peak hit, reset values
             priceInfo.lastPeakPrice = priceInfo.currentPrice;
             priceInfo.lastValleyPrice = priceInfo.currentPrice;
         } else if (priceInfo.lastValleyPrice > priceInfo.currentPrice) {
-            //New valley hit, track valley and check sell conditions
             priceInfo.lastValleyPrice = priceInfo.currentPrice;
 
             const target = priceInfo.lastPeakPrice - (priceInfo.lastPeakPrice * tradingConfig.sellPositionDelta);
-            //logger.info(`position: ${positionInfo.positionAcquiredPrice}`);
-            const minimum = positionInfo.positionAcquiredPrice + (positionInfo.positionAcquiredPrice * (tradingConfig.sellPositionProfitDelta + (tradingConfig.highestFee * 2)));
+            const lowestSellPrice = priceInfo.lastValleyPrice - (priceInfo.lastValleyPrice * tradingConfig.orderPriceDelta);
+            const receivedValue = (lowestSellPrice * positionInfo.assetAmount) - ((lowestSellPrice * positionInfo.assetAmount) * tradingConfig.highestFee);
 
-            //logger.info(`target: ${target}, min: ${minimum}`);
-            if ((priceInfo.lastValleyPrice <= target) && (priceInfo.lastValleyPrice >= minimum)) {
-                logger.debug(`sell price: ${priceInfo.currentPrice}`);
-
+            if ((priceInfo.lastValleyPrice <= target) && (receivedValue > positionInfo.positionAcquiredCost)) {
                 //Sell position:
-                result.numberOfSells += 1;
-                //logger.info(`asset: ${positionInfo.assetAmount}`);
+                logger.debug(`Sell position price: ${priceInfo.currentPrice}`);
+                report.numberOfSells += 1;
+             
                 if (tradingConfig.depositingEnabled) {
-                    const profit = (positionInfo.assetAmount * priceInfo.currentPrice) - (tradingConfig.highestFee * tradingConfig.startingBalance) - positionInfo.positionAcquiredCost;
-                    result.deposits += profit;
-                    logger.info(`profit: ${profit}`);
+                    const profit = (positionInfo.assetAmount * priceInfo.currentPrice) - (tradingConfig.highestFee * (positionInfo.assetAmount * priceInfo.currentPrice)) - positionInfo.positionAcquiredCost;
+                    report.amountOfProfitGenerated += profit;
+
+                    logger.debug(`profit: ${profit}`);
 
                     positionInfo.fiatBalance = (positionInfo.assetAmount * priceInfo.currentPrice) - ((positionInfo.assetAmount * priceInfo.currentPrice) * tradingConfig.highestFee) - profit;
                 } else {
@@ -40,8 +70,7 @@ async function losePosition(positionInfo, tradingConfig, priceInfo, result) {
                 positionInfo.positionAcquiredPrice = 0;
                 positionInfo.positionAcquiredCost = 0;
 
-                
-                logger.debug(positionInfo);
+                logger.debug(`Position info after sell: ${positionInfo}`);
             }
         }
     } catch (err) {
@@ -52,28 +81,35 @@ async function losePosition(positionInfo, tradingConfig, priceInfo, result) {
     }
 }
 
-async function gainPosition(positionInfo, tradingConfig, priceInfo, result) {
+/**
+ * See gainPosition in momentumTrading.js for more information, this is the same but for the analyzer
+ * 
+ * @param {object} positionInfo 
+ * @param {object} tradingConfig 
+ * @param {object} priceInfo 
+ * @param {object} report 
+ */
+async function gainPosition(positionInfo, tradingConfig, priceInfo, report) {
     try {
         if (priceInfo.lastPeakPrice < priceInfo.currentPrice) {
-            //New peak hit, track peak price and check buy conditions
             priceInfo.lastPeakPrice = priceInfo.currentPrice;
 
             const target = priceInfo.lastValleyPrice + (priceInfo.lastValleyPrice * tradingConfig.buyPositionDelta);
 
             if (priceInfo.lastPeakPrice >= target) {
-                result.numberOfBuys += 1;
+                //buy position:
+                logger.debug(`Buy position price: ${priceInfo.currentPrice}`);
+                report.numberOfBuys += 1;
 
-                //logger.info(`fiat: ${positionInfo.fiatBalance}, priceInfo: ${priceInfo.currentPrice}`);
                 positionInfo.positionAcquiredCost = positionInfo.fiatBalance;
                 positionInfo.assetAmount = (positionInfo.fiatBalance - (positionInfo.fiatBalance * tradingConfig.highestFee)) / priceInfo.currentPrice;
                 positionInfo.positionAcquiredPrice = priceInfo.currentPrice;
                 positionInfo.fiatBalance = 0;
                 positionInfo.positionExists = true;
 
-                logger.debug(positionInfo);
+                logger.debug(`Position info after buy: ${positionInfo}`);
             }
         } else if (priceInfo.lastValleyPrice > priceInfo.currentPrice) {
-            //New valley hit, reset values
             priceInfo.lastPeakPrice = priceInfo.currentPrice;
             priceInfo.lastValleyPrice = priceInfo.currentPrice;
         }
@@ -85,70 +121,46 @@ async function gainPosition(positionInfo, tradingConfig, priceInfo, result) {
     }
 }
 
+/**
+ * Entry point, sets up and calls the analyze strategy method to begin.
+ * This is the method someone could use to setup loops to test a range of trading config values to
+ * find the optimal configuration for a given set of data.
+ */
 async function momentumStrategyAnalyzerStart() {
     try {
-        const dataFileName = "btcusd.csv";
-
-        const tradingConfig = {
-            startingBalance: 500,
-            sellPositionProfitDelta: .0003,
-            sellPositionDelta: .021,
-            buyPositionDelta: .014,
-            highestFee: .005,
-            depositingEnabled: false
-        };
-
-        let sellPositionProfitDelta = .0003;
-        let sellPositionDelta = .02;
-        let buyPositionDelta = .013;
-
-        let highestProfit = {};
-
-        tradingConfig.sellPositionProfitDelta = sellPositionProfitDelta;
-        tradingConfig.sellPositionDelta = sellPositionDelta;
-        tradingConfig.buyPositionDelta = buyPositionDelta;
+        //Run once:
+        const report = await analyzeStrategy(tradingConfig, dataFileName);
+        logger.info(report);
         
-        const result = await analyzeStrategy(tradingConfig, dataFileName);
-        highestProfit.result = result;
-        highestProfit.tradingConfig = tradingConfig;
+        //Instead of running it once someone could configure it to run loops for a given range of values to find the most optimal config
+        //Just setup the tradingConfig to be your starting values then let the loops increment the values and run the report then compare for the most profitable
+        //Example: 
+        // let highestProfit = {};
+        // let tradingConfigCopy = tradingConfig;
 
-        // for (let i = 0; i < 300; i += 1) {
-        //     tradingConfig.sellPositionProfitDelta = sellPositionProfitDelta;
-        //     console.log(tradingConfig);
-        //     const result = await analyzeStrategy(tradingConfig, dataFileName);
+        // //baseline:
+        // const report = await analyzeStrategy(tradingConfig, dataFileName);
+        // highestProfit.report = report;
+        // highestProfit.configuration = tradingConfig;
 
-        //     if (highestProfit.result.amountOfProfitGenerated < result.amountOfProfitGenerated) {
-        //         highestProfit.result = result;
-        //         highestProfit.tradingConfig = tradingConfig;
-        //         console.log(highestProfit);
-        //     }
+        // for (let i = 0; i < 50; i += 1) {
+        //     tradingConfigCopy.buyPositionDelta = tradingConfig.buyPositionDelta;
 
-        //     sellPositionProfitDelta += .0001;
-        // }
+        //     for (let j = 0; j < 50; j += 1) {
+        //         const report = await analyzeStrategy(tradingConfigCopy, dataFileName);
 
-        for (let j = 0; j < 20; j += 1) {
-            buyPositionDelta = .013;
-            tradingConfig.sellPositionDelta = sellPositionDelta;
+        //         if (highestProfit.report.amountOfProfitGenerated < report.amountOfProfitGenerated) {
+        //             highestProfit.report = report;
+        //             highestProfit.tradingConfig = tradingConfig;
 
-            for (let k = 0; k < 20; k += 1) {
-                tradingConfig.buyPositionDelta = buyPositionDelta;
-                //console.log(tradingConfig);
-                const result = await analyzeStrategy(tradingConfig, dataFileName);
+        //             logger.info(highestProfit);
+        //         }
 
-                if (highestProfit.result.amountOfProfitGenerated < result.amountOfProfitGenerated) {
-                    logger.info(`New highest found`);
-                    highestProfit.result = result;
-                    highestProfit.tradingConfig = tradingConfig;
-                    console.log(highestProfit);
-                }
-
-                buyPositionDelta += .0001; 
-            }  
+        //         tradingConfigCopy.buyPositionDelta += .001; 
+        //     }  
             
-            sellPositionDelta += .0001;
-        }
-
-        logger.info(highestProfit);
+        //     tradingConfigCopy.sellPositionDelta += .001;
+        // }
         
     } catch (err) {
         const message = "Error occured in momentumStrategyAnalyzerStart method, shutting down. Check the logs for more information.";
@@ -158,13 +170,18 @@ async function momentumStrategyAnalyzerStart() {
     }
 }
 
+/**
+ * Tests the given tradingConfig against the data in the file to then returns a report on the results
+ * 
+ * @param {object} tradingConfig 
+ * @param {string} dataFileName 
+ */
 async function analyzeStrategy(tradingConfig, dataFileName) {
     try {
-        let result = {
+        let report = {
             numberOfBuys: 0,
             numberOfSells: 0,
-            amountOfProfitGenerated: 0,
-            deposits: 0
+            amountOfProfitGenerated: 0
         };
         let positionInfo = {
             positionExists: false,
@@ -184,33 +201,27 @@ async function analyzeStrategy(tradingConfig, dataFileName) {
             priceInfo.currentPrice = parseFloat(records[i].high);
 
             if (positionInfo.positionExists) {
-                await losePosition(positionInfo, tradingConfig, priceInfo, result);
+                await losePosition(positionInfo, tradingConfig, priceInfo, report);
             } else {
-                await gainPosition(positionInfo, tradingConfig, priceInfo, result);
+                await gainPosition(positionInfo, tradingConfig, priceInfo, report);
             }
         }
 
-        if (tradingConfig.depositingEnabled) {
-            if (positionInfo.positionExists) {
-                result.amountOfProfitGenerated = positionInfo.assetAmount * priceInfo.currentPrice - tradingConfig.startingBalance;
-                result.amountOfProfitGenerated += result.deposits;
-            } else {
-                result.amountOfProfitGenerated = result.deposits;
-            }
+        if (positionInfo.positionExists) {
+            report.amountOfProfitGenerated = ((positionInfo.assetAmount * priceInfo.currentPrice) - ((positionInfo.assetAmount * priceInfo.currentPrice) * tradingConfig.highestFee)) - tradingConfig.startingBalance;
         } else {
-            if (positionInfo.positionExists) {
-                result.amountOfProfitGenerated = positionInfo.assetAmount * priceInfo.currentPrice - tradingConfig.startingBalance;
-            } else {
-                result.amountOfProfitGenerated = positionInfo.fiatBalance - tradingConfig.startingBalance;
+            if (!tradingConfig.depositingEnabled) {
+                report.amountOfProfitGenerated = positionInfo.fiatBalance - tradingConfig.startingBalance;
             }
         }
 
-        return result;
+        return report;
+
     } catch (err) {
-        const message = "Error occured in bot, shutting down. Check the logs for more information.";
+        const message = "Error occured in analyzeStrategy method.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
-        process.exit(1);
+        throw err;
     }
 }
 
