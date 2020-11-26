@@ -138,12 +138,12 @@ async function momentumStrategyAnalyzerStart() {
         //Example: 
 
         // let highestProfit = {};
-        // let tradingConfigCopy = tradingConfig;
+        // let tradingConfigCopy = Object.assign({}, tradingConfig);
 
         // //baseline:
         // const report = await analyzeStrategy(tradingConfig, dataFileName);
         // highestProfit.report = report;
-        // highestProfit.configuration = tradingConfig;
+        // highestProfit.configuration = Object.assign({}, tradingConfig);
 
         // for (let i = 0; i < 80; i += 1) {
         //     tradingConfigCopy.buyPositionDelta = tradingConfig.buyPositionDelta;
@@ -155,7 +155,7 @@ async function momentumStrategyAnalyzerStart() {
 
         //         if (highestProfit.report.amountOfProfitGenerated < report.amountOfProfitGenerated) {
         //             highestProfit.report = report;
-        //             highestProfit.configuration = tradingConfig;
+        //             highestProfit.configuration = Object.assign({}, tradingConfigCopy);
 
         //             logger.info(highestProfit);
         //         }
@@ -165,6 +165,9 @@ async function momentumStrategyAnalyzerStart() {
             
         //     tradingConfigCopy.sellPositionDelta += .0005;
         // }
+
+        // logger.info("Final Report:");
+        // logger.info(highestProfit);
 
     } catch (err) {
         const message = "Error occured in momentumStrategyAnalyzerStart method, shutting down. Check the logs for more information.";
