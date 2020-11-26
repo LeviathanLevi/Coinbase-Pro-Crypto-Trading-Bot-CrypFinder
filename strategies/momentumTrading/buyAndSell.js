@@ -60,9 +60,17 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
 
         //Loop to wait for order to be filled:
         for (let i = 0; i < 10 && positionInfo.positionExists === true; ++i) {
+            let orderDetails;
             logger.debug("Checking sell order result...");
             await sleep(6000); //wait 6 seconds
-            const orderDetails = await authedClient.getOrder(orderID); //Get latest order details
+            try {
+                orderDetails = await authedClient.getOrder(orderID); //Get latest order details
+            } catch(err) {
+                const message = "Error occured when attempting to get the order.";
+                const errorMsg = new Error(err);
+                logger.error({ message, errorMsg, err });
+                continue;
+            }
             logger.debug(orderDetails);
 
             if (orderDetails.status === "done") {
@@ -158,9 +166,17 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
 
         //Loop to wait for order to be filled:
         for (let i = 0; i < 10 && positionInfo.positionExists === false; ++i) {
+            let orderDetails;
             logger.debug("Checking buy order result...");
             await sleep(6000); //wait 6 seconds
-            const orderDetails = await authedClient.getOrder(orderID); //Get latest order details
+            try {
+                orderDetails = await authedClient.getOrder(orderID); //Get latest order details
+            } catch(err) {
+                const message = "Error occured when attempting to get the order.";
+                const errorMsg = new Error(err);
+                logger.error({ message, errorMsg, err });
+                continue;
+            }
             logger.debug(orderDetails);
 
             if (orderDetails.status === "done") {

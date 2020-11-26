@@ -15,7 +15,7 @@ const csvParser = require("csv-parse/lib/sync");
 //***************Trade configuration*****************
 
 //The name of the file containing the data to be tested:
-const dataFileName = "btcusd.csv"; 
+const dataFileName = "xtzusd.csv"; 
 
 //The bot trading config values (See momentumTrading.js for more information on these values):
 const tradingConfig = {
@@ -145,10 +145,10 @@ async function momentumStrategyAnalyzerStart() {
         // highestProfit.report = report;
         // highestProfit.configuration = Object.assign({}, tradingConfig);
 
-        // for (let i = 0; i < 80; i += 1) {
+        // for (let i = 0; i < 50; i += 1) {
         //     tradingConfigCopy.buyPositionDelta = tradingConfig.buyPositionDelta;
 
-        //     for (let j = 0; j < 80; j += 1) {
+        //     for (let j = 0; j < 50; j += 1) {
         //         logger.debug(tradingConfig);
 
         //         const report = await analyzeStrategy(tradingConfigCopy, dataFileName);
@@ -160,10 +160,10 @@ async function momentumStrategyAnalyzerStart() {
         //             logger.info(highestProfit);
         //         }
 
-        //         tradingConfigCopy.buyPositionDelta += .0005; 
+        //         tradingConfigCopy.buyPositionDelta += .001; 
         //     }  
             
-        //     tradingConfigCopy.sellPositionDelta += .0005;
+        //     tradingConfigCopy.sellPositionDelta += .001;
         // }
 
         // logger.info("Final Report:");
