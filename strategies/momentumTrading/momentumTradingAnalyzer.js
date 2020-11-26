@@ -91,44 +91,61 @@ async function momentumStrategyAnalyzerStart() {
 
         const tradingConfig = {
             startingBalance: 500,
-            sellPositionProfitDelta: .0016,
-            sellPositionDelta: .001,
-            buyPositionDelta: .001,
-            orderPriceDelta: .0015,
+            sellPositionProfitDelta: .0003,
+            sellPositionDelta: .021,
+            buyPositionDelta: .014,
             highestFee: .005,
             depositingEnabled: false
         };
 
-        let sellPositionProfitDelta = [.0016, .005, .01, .025, .05];
-        let sellPositionDelta = .001;
-        let buyPositionDelta = .001;
+        let sellPositionProfitDelta = .0003;
+        let sellPositionDelta = .02;
+        let buyPositionDelta = .013;
 
         let highestProfit = {};
+
+        tradingConfig.sellPositionProfitDelta = sellPositionProfitDelta;
+        tradingConfig.sellPositionDelta = sellPositionDelta;
+        tradingConfig.buyPositionDelta = buyPositionDelta;
         
         const result = await analyzeStrategy(tradingConfig, dataFileName);
         highestProfit.result = result;
         highestProfit.tradingConfig = tradingConfig;
 
-        for (let i = 0; i < 5; i += 1) {
-            tradingConfig.sellPositionProfitDelta = sellPositionProfitDelta[i];
+        // for (let i = 0; i < 300; i += 1) {
+        //     tradingConfig.sellPositionProfitDelta = sellPositionProfitDelta;
+        //     console.log(tradingConfig);
+        //     const result = await analyzeStrategy(tradingConfig, dataFileName);
 
-            for (let j = 0; j < 49; j += 1) {
-                sellPositionDelta += .001;
-                tradingConfig.sellPositionDelta = sellPositionDelta;
+        //     if (highestProfit.result.amountOfProfitGenerated < result.amountOfProfitGenerated) {
+        //         highestProfit.result = result;
+        //         highestProfit.tradingConfig = tradingConfig;
+        //         console.log(highestProfit);
+        //     }
 
-                for (let k = 0; k < 49; k += 1) {
-                    buyPositionDelta += .001; 
-                    tradingConfig.sellPositionDelta = buyPositionDelta;
+        //     sellPositionProfitDelta += .0001;
+        // }
 
-                    const result = await analyzeStrategy(tradingConfig, dataFileName);
+        for (let j = 0; j < 20; j += 1) {
+            buyPositionDelta = .013;
+            tradingConfig.sellPositionDelta = sellPositionDelta;
 
-                    if (highestProfit.result.amountOfProfitGenerated < result.amountOfProfitGenerated) {
-                        logger.info(`New highest found`);
-                        highestProfit.result = result;
-                        highestProfit.tradingConfig = tradingConfig;
-                    }
-                }   
-            }
+            for (let k = 0; k < 20; k += 1) {
+                tradingConfig.buyPositionDelta = buyPositionDelta;
+                //console.log(tradingConfig);
+                const result = await analyzeStrategy(tradingConfig, dataFileName);
+
+                if (highestProfit.result.amountOfProfitGenerated < result.amountOfProfitGenerated) {
+                    logger.info(`New highest found`);
+                    highestProfit.result = result;
+                    highestProfit.tradingConfig = tradingConfig;
+                    console.log(highestProfit);
+                }
+
+                buyPositionDelta += .0001; 
+            }  
+            
+            sellPositionDelta += .0001;
         }
 
         logger.info(highestProfit);

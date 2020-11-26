@@ -22,10 +22,10 @@ const websocketURI = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 
 //Trading config:
 //Global constants, consider tuning these values to optimize the bot's trading: 
-const sellPositionProfitDelta = .01; //Minimum amount of money needed to be made before selling position the program will account for taker and maker fees as well
-const sellPositionDelta = .005; //The amount of change between peak and valley to trigger a sell off
-const buyPositionDelta = .005; //The amount of change between the peak and valley price to trigger a buy in
-const orderPriceDelta = .0015; //The amount of extra room to give the sell/buy orders to go through
+const sellPositionProfitDelta = .0005; //Minimum amount of money needed to be made before selling position the program will account for taker and maker fees as well
+const sellPositionDelta = .002; //The amount of change between peak and valley to trigger a sell off
+const buyPositionDelta = .0015; //The amount of change between the peak and valley price to trigger a buy in
+const orderPriceDelta = .001; //The amount of extra room to give the sell/buy orders to go through
 
 //Currency config:
 //The pieces of the product pair, this is the two halves of coinbase product pair (examples of product pairs: BTC-USD, DASH-BTC, ETH-USDC). For BTC-USD the base currency is BTC and the quote currency is USD 
@@ -41,9 +41,9 @@ const depositProfileName = "default"; //This is the name of the profile you want
 const depositingEnabled = true; //Choose whether or not you want you want to deposit a cut of the profits (Options: true/false)
 const depositingAmount = 0.5; //Enter the amount of profit you want deposited (Options: choose a percent between 1 and 100 in decimal form I.E. .5 = 50%)
 
-// Due to rounding errors the buy order may not have enough funds to execute the order. This is the minimum funds amount that
-// will be left in usd account to avoid this error. 
-const balanceMinimum = .005; 
+// Due to rounding errors the buy order may not have enough funds to execute the order. This is the minimum funds amount in dollars that
+// will be left in usd account to avoid this error. Default = 6 cents (.06).
+const balanceMinimum = .06; 
 
 //***************************************************************************************************************************
  
@@ -149,11 +149,12 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds,
                 lastValleyPrice = currentPrice;
     
                 const target = lastPeakPrice - (lastPeakPrice * sellPositionDelta);
-                const minimum = positionInfo.positionAcquiredPrice + (positionInfo.positionAcquiredPrice * (sellPositionProfitDelta + (tradingConfig.highestFee * 2)));
+                const lowestSellPrice = lastValleyPrice - (lastValleyPrice * orderPriceDelta);
+                const receivedValue = (lowestSellPrice * balance) - ((lowestSellPrice * balance) * tradingConfig.highestFee);
     
-                logger.debug(`Sell Position, LVP: ${lastValleyPrice} needs to be less than or equal to ${target} and greater than or equal to ${minimum} to sell`);
+                logger.debug(`Sell Position, LVP: ${lastValleyPrice} needs to be less than or equal to ${target} to sell and the receivedValue: ${receivedValue} needs to be greater than the positionAcquiredCost: ${positionInfo.positionAcquiredCost}`);
     
-                if ((lastValleyPrice <= target) && (lastValleyPrice >= minimum)) {
+                if ((lastValleyPrice <= target) && (receivedValue > positionInfo.positionAcquiredCost)) {
                     logger.info("Attempting to sell position...");
 
                     //Create a new authenticated client to prevent it from expiring or hitting API limits
@@ -455,7 +456,7 @@ async function momentumStrategyStart() {
                 const availableBalance = parseFloat(quoteCurrencyAccount.available);
 
                 if (availableBalance > 0) {
-                    const tradeBalance = availableBalance - (availableBalance * balanceMinimum);
+                    const tradeBalance = availableBalance - balanceMinimum; //Subtract this dollar amount so that there is room for rounding errors
 
                     logger.info("Entering gain position with: " + tradeBalance + " " + productInfo.quoteCurrency);
 
