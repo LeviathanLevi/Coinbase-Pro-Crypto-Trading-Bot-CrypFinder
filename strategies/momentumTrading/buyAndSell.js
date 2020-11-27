@@ -48,6 +48,7 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
             price: priceToSell, 
             size: orderSize,
             product_id: productInfo.productPair,
+            time_in_force: "FOK"
         };
 
         logger.info("Sell order params: " + JSON.stringify(orderParams));
@@ -59,9 +60,17 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
 
         //Loop to wait for order to be filled:
         for (let i = 0; i < 10 && positionInfo.positionExists === true; ++i) {
+            let orderDetails;
             logger.debug("Checking sell order result...");
             await sleep(6000); //wait 6 seconds
-            const orderDetails = await authedClient.getOrder(orderID); //Get latest order details
+            try {
+                orderDetails = await authedClient.getOrder(orderID); //Get latest order details
+            } catch(err) {
+                const message = "Error occured when attempting to get the order.";
+                const errorMsg = new Error(err);
+                logger.error({ message, errorMsg, err });
+                continue;
+            }
             logger.debug(orderDetails);
 
             if (orderDetails.status === "done") {
@@ -72,7 +81,7 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
 
                     //Update positionData file:
                     try {
-                        const writeData = JSON.stringify(positionInfo);  
+                        const writeData = JSON.stringify(positionInfo);
                         fileSystem.writeFileSync("positionData.json", writeData);
                     } catch(err) {
                         const message = "Error, failed to write the positionInfo to the positionData file in sellPosition. Continuing as normal but but positionDataTracking might not work correctly.";
@@ -145,6 +154,7 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
             price: priceToBuy, 
             size: orderSize, 
             product_id: productInfo.productPair,
+            time_in_force: "FOK"
         };
 
         logger.info("Buy order params: " + JSON.stringify(orderParams));
@@ -156,9 +166,17 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
 
         //Loop to wait for order to be filled:
         for (let i = 0; i < 10 && positionInfo.positionExists === false; ++i) {
+            let orderDetails;
             logger.debug("Checking buy order result...");
             await sleep(6000); //wait 6 seconds
-            const orderDetails = await authedClient.getOrder(orderID); //Get latest order details
+            try {
+                orderDetails = await authedClient.getOrder(orderID); //Get latest order details
+            } catch(err) {
+                const message = "Error occured when attempting to get the order.";
+                const errorMsg = new Error(err);
+                logger.error({ message, errorMsg, err });
+                continue;
+            }
             logger.debug(orderDetails);
 
             if (orderDetails.status === "done") {
@@ -168,11 +186,11 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
                     //Update position info
                     positionInfo.positionExists = true;
                     positionInfo.positionAcquiredPrice = parseFloat(orderDetails.executed_value) / parseFloat(orderDetails.filled_size);
-                    positionInfo.positionAcquiredCost = parseFloat(orderDetails.executed_value)  + parseFloat(orderDetails.fill_fees);
+                    positionInfo.positionAcquiredCost = parseFloat(orderDetails.executed_value) + parseFloat(orderDetails.fill_fees);
 
                     //Update positionData file:
                     try {
-                        const writeData = JSON.stringify(positionInfo);  
+                        const writeData = JSON.stringify(positionInfo);
                         fileSystem.writeFileSync("positionData.json", writeData);
                     } catch(err) {
                         const message = "Error, failed to write the positionInfo to the positionData file in buyPosition. Continuing as normal but but positionDataTracking might not work correctly.";

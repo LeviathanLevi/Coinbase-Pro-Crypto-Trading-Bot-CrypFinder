@@ -25,7 +25,10 @@
   "dependencies": {
     "axios": "^0.20.0",
     "coinbase-pro": "^0.9.0",
+    "csv-parse": "^4.14.1",
+    "csv-parser": "^2.3.3",
     "dotenv": "^8.2.0",
+    "node-csv": "^0.1.2",
     "pino": "^6.7.0"
   },
   "devDependencies": {

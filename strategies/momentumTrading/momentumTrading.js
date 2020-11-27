@@ -22,9 +22,8 @@ const websocketURI = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 
 //Trading config:
 //Global constants, consider tuning these values to optimize the bot's trading: 
-const sellPositionProfitDelta = .01; //Minimum amount of money needed to be made before selling position the program will account for taker and maker fees as well
-const sellPositionDelta = .005; //The amount of change between peak and valley to trigger a sell off
-const buyPositionDelta = .005; //The amount of change between the peak and valley price to trigger a buy in
+const sellPositionDelta = .02; //The amount of change between peak and valley to trigger a sell off
+const buyPositionDelta = .015; //The amount of change between the peak and valley price to trigger a buy in
 const orderPriceDelta = .001; //The amount of extra room to give the sell/buy orders to go through
 
 //Currency config:
@@ -35,15 +34,15 @@ const quoteCurrencyName = "USD";
 //Profile config:
 //Coinbase portfolios (profiles):
 const tradingProfileName = "BTC trader"; //This is the name of the profile you want the bot to trade in
-const depositProfileName = "Profit savings"; //This is the name of the profile you want to deposit some profits to
+const depositProfileName = "default"; //This is the name of the profile you want to deposit some profits to
 
 //Deposit config:
 const depositingEnabled = true; //Choose whether or not you want you want to deposit a cut of the profits (Options: true/false)
 const depositingAmount = 0.5; //Enter the amount of profit you want deposited (Options: choose a percent between 1 and 100 in decimal form I.E. .5 = 50%)
 
-// Due to rounding errors the buy order may not have enough funds to execute the order. This is the minimum funds amount that
-// will be left in usd account to avoid this error. 
-const balanceMinimum = .005; 
+// Due to rounding errors the buy order may not have enough funds to execute the order. This is the minimum funds amount in dollars that
+// will be left in usd account to avoid this error. Default = 6 cents (.06).
+const balanceMinimum = .06; 
 
 //***************************************************************************************************************************
  
@@ -149,11 +148,12 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds,
                 lastValleyPrice = currentPrice;
     
                 const target = lastPeakPrice - (lastPeakPrice * sellPositionDelta);
-                const minimum = positionInfo.positionAcquiredPrice + (positionInfo.positionAcquiredPrice * (sellPositionProfitDelta + (tradingConfig.highestFee * 2)));
+                const lowestSellPrice = lastValleyPrice - (lastValleyPrice * orderPriceDelta);
+                const receivedValue = (lowestSellPrice * balance) - ((lowestSellPrice * balance) * tradingConfig.highestFee);
     
-                logger.debug(`Sell Position, LVP: ${lastValleyPrice} needs to be less than or equal to ${target} and greater than or equal to ${minimum} to sell`);
+                logger.debug(`Sell Position, LVP: ${lastValleyPrice} needs to be less than or equal to ${target} to sell and the receivedValue: ${receivedValue} needs to be greater than the positionAcquiredCost: ${positionInfo.positionAcquiredCost}`);
     
-                if ((lastValleyPrice <= target) && (lastValleyPrice >= minimum)) {
+                if ((lastValleyPrice <= target) && (receivedValue > positionInfo.positionAcquiredCost)) {
                     logger.info("Attempting to sell position...");
 
                     //Create a new authenticated client to prevent it from expiring or hitting API limits
@@ -214,7 +214,7 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, positionInf
 
                     await buyPosition(balance, positionInfo, lastPeakPrice, authedClient, productInfo, tradingConfig);
                 }
-            } else  if (lastValleyPrice > currentPrice) {
+            } else if (lastValleyPrice > currentPrice) {
                 //New valley hit, reset values
 
                 lastPeakPrice = currentPrice;
@@ -263,6 +263,13 @@ async function getAccountIDs(productInfo) {
             }
         }
 
+        if (!accountObject.depositProfileID) {
+            throw new Error(`Could not find the deposit profile ID. Ensure that the depositProfileName: "${depositProfileName}" is spelt correctly.`)
+        }
+        if (!accountObject.tradeProfileID) {
+            throw new Error(`Could not find the trade profile ID. Ensure that the tradingProfileName: "${tradingProfileName}" is spelt correctly.`)
+        }
+
         return accountObject;
     } catch (err) {
         const message = "Error occured in getAccountIDs method.";
@@ -294,7 +301,7 @@ async function getProductInfo(productInfo) {
         }
         
         if (productPairData === undefined) {
-            throw new Error(`Error, could not find a valid matching product pair for "${productInfo.productPair}". Verify the name is correct.`);
+            throw new Error(`Error, could not find a valid matching product pair for "${productInfo.productPair}". Verify the product names is correct/exists.`);
         }
 
         for (let i = 2; i < productPairData.quote_increment.length; ++i) {
@@ -366,7 +373,6 @@ async function momentumStrategyStart() {
         let highestFee = await returnHighestFee();
 
         const tradingConfig = {
-            sellPositionProfitDelta,
             sellPositionDelta,
             buyPositionDelta,
             orderPriceDelta,
@@ -448,7 +454,7 @@ async function momentumStrategyStart() {
                 const availableBalance = parseFloat(quoteCurrencyAccount.available);
 
                 if (availableBalance > 0) {
-                    const tradeBalance = availableBalance - (availableBalance * balanceMinimum);
+                    const tradeBalance = availableBalance - balanceMinimum; //Subtract this dollar amount so that there is room for rounding errors
 
                     logger.info("Entering gain position with: " + tradeBalance + " " + productInfo.quoteCurrency);
 

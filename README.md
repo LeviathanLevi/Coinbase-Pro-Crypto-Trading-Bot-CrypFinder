@@ -1,5 +1,5 @@
 # CrypFinder Bot 
-## Version 1.3
+## Version 1.4
 
 ## CrypFinder Summary: 
 CrypFinder is a Coinbase Pro API trading bot that currently implements a basic momentum trading strategy in NodeJS using the Coinbase Pro API, as well as its own custom library for the endpoints that are not supported by the now deprecated Coinbase Pro NodeJS Library. Currently, Coinbase Pro limits the number of portfolios to five, this means that the bot can run up to four trading instances simultaneously per Coinbase Pro account. This bot can be modified to trade any product pairs available on Coinbase Pro, such as BTC-USD, ETH-USD, etc., but stablecoin (USDC to other coins) and crypto markets (coin to other coins) aren't currently supported, only USD markets (USD to coins). 
@@ -11,10 +11,10 @@ The bot features a number of variables at the top that can be configured to cust
 ## How to run the program:
 I suggest starting by using this program in the [Coinbase Pro Sandbox](https://docs.pro.coinbase.com/#sandbox) for testing. 
 1. Create a coinbase pro account. Install NodeJS, install Git, consider adding an ESLint plugin to your IDE to use the eslint configuration.
-2. Setup your Coinbase Pro account portfolios (profiles), this is an important part of the bot. The bot will swoop up any available balance in a profile and start trading with it, so in order to safely store some of the profits you must specify another profile to deposit to. Currently, Coinbase Pro limits profiles to five. I recommend setting up the portfolios with the Default, Profit savings, and ___ trader (I.E. 'BTC trader' if it's trading BTC) for the other available three slots. Don't trade in the default profile because if you transfer money in, it could get swept up by the bot before you can allocate it where you want to. Alternatively, you could deposit profits in the default portfolio; this would open up four profiles for bot trading. 
-3. Create the API key for the profile you want the bot to trade on, give it View/Trade/Transfer permissions and whitelist your public IP. [More info here](https://help.coinbase.com/en/pro/other-topics/api/how-do-i-create-an-api-key-for-coinbase-pro). 
+2. Setup your Coinbase Pro account portfolios (portfolios are also referred to as profiles). Each bot that runs needs it's own portfolio. The bot will take any available balance in the portfolio that it's tied to via the API key and start trading with it. Coinbase Pro gives you the default (Default Portfolio) to start with, but, you can add up to four more (5 is the max). Don't use a bot to trade in the default portfolio because that's where money transfers go by default; which, means the funds could get swept up by the bot before you can allocate them where you want. Create a new portfolio for each bot you want to run, for example you could create one called "BTC trader" that the bot trades bitcoin inside of. If you wish to use the feature that deposits all or a portion of profits into another portfolio to save it then by default those deposits will go to the default portfolio, but you have the option to create a different portfolio to use instead. Take note of the profile names you created as you will need them in step 5.
+3. Create the API key for the portfolio you want the bot to trade on, give it View/Trade/Transfer permissions and whitelist your public IP. [More info here](https://help.coinbase.com/en/pro/other-topics/api/how-do-i-create-an-api-key-for-coinbase-pro). 
 4. Clone the github repo locally and run `npm install` from within the repo directory.
-5. Configure the variables at the top of index.js to select your environment, Deltas, product to trade, and profile names.
+5. Configure the variables at the top of index.js to select your environment, Deltas, product to trade, profile names, etc.
 6. Create a .env file in the root directory of the projects repo with the following:
 
     API_KEY=\<your API key>
@@ -44,6 +44,9 @@ If at any point the bot stops running for any reason, the the bot keeps a file c
 ## Running the program out of sandbox:
 When you're confident in the configuration/code base and want to run it in the real environment, comment out the sandbox env variables and uncomment out the real API URI variables. Update the .env file with a valid API key. You can run this program on your own machine or consider using a server such as an AWS EC2 instance with an EIP (you need to whitelist the API IP). AWS EC2 offers a free tier instance for a year that works well for hosting.
 
+## Momentum trading strategy analyzer:
+The momentumTradingAnalyzer is a way to run data against the momentum trading bot strategy to see how well it performs. It takes in a .csv file with OHLC data. Carston Klein has already compiled a massive dataset that is perfect for this task and it's available for free on Kaggle [check it out](https://www.kaggle.com/tencars/392-crypto-currency-pairs-at-minute-resolution?select=ampusd.csv). After downloading the file for the coin data you want, just trim the .csv file to the length of time you want to test and run the analyzer with the configuration you want and it will generate a report showing how it did. He also wrote [this article](https://medium.com/coinmonks/how-to-get-historical-crypto-currency-data-954062d40d2d) on how to get similar data yourself.
+
 ## Helpful links:
 [Coinbase Pro](https://pro.coinbase.com/trade/BTC-USD)
 
@@ -54,7 +57,6 @@ When you're confident in the configuration/code base and want to run it in the r
 [Flow diagram of the momentum strategy, open it in Google draw.io for best results (May be outdated, but can help to give an idea of how the program works)](https://drive.google.com/file/d/1sMg7nWcuCDwHS5wdwHgoe5qqODO7UEFA/view?usp=sharing)
 
 ## Roadmap: 
-- Implement a way to run the bot against historical data to test and compare the performance of the bot. This would give users a way to optimize the trading configuration values.
 - Implement a CLI (command line interface) to control the bot. This would make it so that users won't have to edit the code directly to configure and run the bot.
 
 ### Possible future goals:
