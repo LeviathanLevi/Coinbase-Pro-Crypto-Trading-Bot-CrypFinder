@@ -15,7 +15,7 @@ const csvParser = require("csv-parse/lib/sync");
 //***************Trade configuration*****************
 
 //The name of the file containing the data to be tested:
-const dataFileName = "xtzusd.csv"; 
+const dataFileName = "nameOfDataFile.csv"; 
 
 //The bot trading config values (See momentumTrading.js for more information on these values):
 const tradingConfig = {
