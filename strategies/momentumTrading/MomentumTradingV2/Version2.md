@@ -1,5 +1,7 @@
-# CrypFinder Bot 
-## Version 1.5
+# Momentum trading strategy version 2
+The main difference between this version and version 1 is that it removes sellPositionProfitDelta instead, the bot will always perform a trade when it's profit is greater than 0 and the sellPositionDelta is met. The losePosition and gainPosition method logic were improved by making sure the calculations are accurate. This version also features an analyzer.
+
+# Documentation as it existed with this version: 
 
 ## CrypFinder Summary: 
 CrypFinder is a Coinbase Pro API trading bot that currently implements a basic momentum trading strategy in NodeJS using the Coinbase Pro API, as well as its own custom library for the endpoints that are not supported by the now deprecated Coinbase Pro NodeJS Library. Currently, Coinbase Pro limits the number of portfolios to five, this means that the bot can run up to four trading instances simultaneously per Coinbase Pro account. This bot can be modified to trade any product pairs available on Coinbase Pro, such as BTC-USD, ETH-USD, etc., but stablecoin (USDC to other coins) and crypto markets (coin to other coins) aren't currently supported, only USD markets (USD to coins). 
@@ -31,39 +33,5 @@ I suggest starting by using this program in the [Coinbase Pro Sandbox](https://d
 ### Restarting the bot:
 If at any point the bot stops running for any reason, the the bot keeps a file called positionData.json that tracks whether or not it was in a position, and the information associated with that position. If you restart the bot it will read that file and automatically pick up where it left off. Don't try to add more coins to the existing position or it will cause unexpected behavior since the bot won't know the associated costs with the newly added coin. You can, at any point, add USD to a portfolio, the bot will start trading with the newly added USD when it completes a buy/sell cycle. If you want to start the bot fresh without existing data, simply make sure there is no left over coin in your profile and delete the positionData.json file.
 
-## How to contribute:
-1. Fork the repo.
-2. Clone the github repo locally and run `npm install` 
-3. Switch to the latest development branch to get the up-to-date progress.
-4. Create a new branch with a name that describes the feature/change you're making.
-5. Check the roadmap for ideas of things to work on.
-6. Make your changes and commit them with a descriptive message.
-7. Push your changes upstream.
-8. When you're done testing your changes, create a PR in your forked repository. Select LeviathanLevi/Coinbase-Pro-Crypto-Trading-Bot-CrypFinder to merge into. Then wait for approval.
-
-## Running the program out of sandbox:
-When you're confident in the configuration/code base and want to run it in the real environment, comment out the sandbox env variables and uncomment out the real API URI variables. Update the .env file with a valid API key. You can run this program on your own machine or consider using a server such as an AWS EC2 instance with an EIP (you need to whitelist the API IP). AWS EC2 offers a free tier instance for a year that works well for hosting.
-
 ## Momentum trading strategy analyzer:
 The momentumTradingAnalyzer is a way to run data against the momentum trading bot strategy to see how well it performs. It takes in a .csv file with OHLC data. Carston Klein has already compiled a massive dataset that is perfect for this task and it's available for free on Kaggle [check it out](https://www.kaggle.com/tencars/392-crypto-currency-pairs-at-minute-resolution?select=ampusd.csv). After downloading the file for the coin data you want, just trim the .csv file to the length of time you want to test and run the analyzer with the configuration you want and it will generate a report showing how it did. He also wrote [this article](https://medium.com/coinmonks/how-to-get-historical-crypto-currency-data-954062d40d2d) on how to get similar data yourself.
-
-## Helpful links:
-[Coinbase Pro](https://pro.coinbase.com/trade/BTC-USD)
-
-[Coinbase Pro API Docs](https://docs.pro.coinbase.com/#introduction)
-
-[Coinbase Pro NodeJS Library](https://www.npmjs.com/package/coinbase-pro)
-
-[Flow diagram of the momentum strategy, open it in Google draw.io for best results (May be outdated, but can help to give an idea of how the program works)](https://drive.google.com/file/d/1sMg7nWcuCDwHS5wdwHgoe5qqODO7UEFA/view?usp=sharing)
-
-## Roadmap: 
-- Implement a CLI (command line interface) to control the bot. This would make it so that users won't have to edit the code directly to configure and run the bot.
-
-### Possible future goals:
-- Add more strategies or make the current momentum strategy better. If making major changes to a current trading strategy, keep the old version and just add a new version of it to the same folder (momentumTradingV1, V2, etc).
-
-## Interested in the project?:
-Consider getting involved. Free to contact the creator on GitHub ([Levi Leuthold](https://github.com/LeviathanLevi)) for information on how to get started! Checkout the product roadmap to see what features are currently planned for the future or add your own ideas. 
-
-## Contributors:
-Levi Leuthold - Creator

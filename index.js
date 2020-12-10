@@ -5,12 +5,22 @@
 *   a specific strategy would be selected to start the program with. In the future, this project could use  
 *   a command line interface here for controlling it.
 */
-const momentumStrategyStart = require("./strategies/momentumTrading/momentumTrading");
-const momentumStrategyAnalyzerStart = require("./strategies/momentumTrading/momentumTradingAnalyzer");
-//Make sure to configure the momentumStrategy in ./strategies/momentumTrading/momentumTrading.js before launching
+const momentumStrategyStartV1 = require("./strategies/momentumTrading//momentumTradingV1/momentumTrading");
+const momentumStrategyStartV2 = require("./strategies/momentumTrading//momentumTradingV2/momentumTrading");
+const momentumStrategyAnalyzerStartV2 = require("./strategies/momentumTrading/MomentumTradingV2/momentumTradingAnalyzer");
 
-//Launches the momentum strategy and starts the bot:
-momentumStrategyStart();
+// Make sure to setup the configuration variables in whichever bot you're running before launching
+// Check the Version#.md in the strategies folder for more information on the difference between versions
 
-//Launches the momentum strategy anaylzer for back testing:
-//momentumStrategyAnalyzerStart();
+// ***************Momentum trading********************
+
+//Launches the momentum strategy V2 (latest) and starts the bot:
+momentumStrategyStartV2();
+
+//Launches the momentum strategy V1 and starts the bot:
+//momentumStrategyStartV1();
+
+//Launches the momentum strategy anaylzer for back testing data:
+//momentumStrategyAnalyzerStartV2();
+
+// ***************************************************
