@@ -59,7 +59,7 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
         const orderID = order.id;
 
         //Loop to wait for order to be filled:
-        for (let i = 0; i < 10 && positionInfo.positionExists === true; ++i) {
+        for (let i = 0; i < 100 && positionInfo.positionExists === true; ++i) {
             let orderDetails;
             logger.debug("Checking sell order result...");
             await sleep(6000); //wait 6 seconds
@@ -165,7 +165,7 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
         const orderID = order.id;
 
         //Loop to wait for order to be filled:
-        for (let i = 0; i < 10 && positionInfo.positionExists === false; ++i) {
+        for (let i = 0; i < 100 && positionInfo.positionExists === false; ++i) {
             let orderDetails;
             logger.debug("Checking buy order result...");
             await sleep(6000); //wait 6 seconds
