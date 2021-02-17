@@ -31,6 +31,16 @@ I suggest starting by using this program in the [Coinbase Pro Sandbox](https://d
 ### Restarting the bot:
 If at any point the bot stops running for any reason, the the bot keeps a file called positionData.json that tracks whether or not it was in a position, and the information associated with that position. If you restart the bot it will read that file and automatically pick up where it left off. Don't try to add more coins to the existing position or it will cause unexpected behavior since the bot won't know the associated costs with the newly added coin. You can, at any point, add USD to a portfolio, the bot will start trading with the newly added USD when it completes a buy/sell cycle. If you want to start the bot fresh without existing data, simply make sure there is no left over coin in your profile and delete the positionData.json file.
 
+The positionData.json file contains a JSON object with 3 fields, positionExists (boolean), positionAcquiredPrice (Number), positionAcquiredCost (Number).
+
+Example of a position existing positionData.json file:
+{"positionExists":true,"positionAcquiredPrice":48560.00000000001,"positionAcquiredCost":274.66836873840003}
+
+Example of a postion not existing positionData.json file:
+{"positionExists":false,"positionAcquiredPrice":228.69000000000003,"positionAcquiredCost":299.85119860983207}
+
+Notice that the position acquired cost and price fields still exist in the file when postionExists is faled, but they are ignored.
+
 ## How to contribute:
 1. Fork the repo.
 2. Clone the github repo locally and run `npm install` 
