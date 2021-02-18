@@ -11,10 +11,10 @@ The bot features a number of variables at the top that can be configured to cust
 ## How to run the program:
 I suggest starting by using this program in the [Coinbase Pro Sandbox](https://docs.pro.coinbase.com/#sandbox) for testing. 
 1. Create a coinbase pro account. Install NodeJS, install Git, consider adding an ESLint plugin to your IDE to use the eslint configuration.
-2. Setup your Coinbase Pro account portfolios (portfolios are also referred to as profiles). Each bot that runs needs it's own portfolio. The bot will take any available balance in the portfolio that it's tied to via the API key and start trading with it. Coinbase Pro gives you the default (Default Portfolio) to start with, but, you can add up to four more (5 is the max). Don't use a bot to trade in the default portfolio because that's where money transfers go by default; which, means the funds could get swept up by the bot before you can allocate them where you want. Create a new portfolio for each bot you want to run, for example you could create one called "BTC trader" that the bot trades bitcoin inside of. If you wish to use the feature that deposits all or a portion of profits into another portfolio to save it then by default those deposits will go to the default portfolio, but you have the option to create a different portfolio to use instead. Take note of the profile names you created as you will need them in step 5.
+2. Setup your Coinbase Pro account portfolios (portfolios are also referred to as profiles). Each bot that runs needs it's own portfolio. The bot will take any available balance in the portfolio that it's tied to via the API key and start trading with it. Coinbase Pro gives you the default (Default Portfolio) to start with, but, you can add up to four more (5 is the max). Don't use a bot to trade in the default portfolio because that's where money transfers go by default; which, means the funds could get swept up by the bot before you can allocate them where you want. Create a new portfolio for each bot you want to run, for example you could create one called "BTC trader" that the bot trades bitcoin inside of. If you wish to use the feature that deposits all or a portion of profits into another portfolio to save it then by default those deposits will go to the default portfolio, but you have the option to create a different portfolio to use instead. Take note of the profile names you created as you will need them in steps 5 & 6.
 3. Create the API key for the portfolio you want the bot to trade on, give it View/Trade/Transfer permissions and whitelist your public IP. [More info here](https://help.coinbase.com/en/pro/other-topics/api/how-do-i-create-an-api-key-for-coinbase-pro). 
 4. Clone the github repo locally and run `npm install` from within the repo directory.
-5. Configure the variables at the top of index.js to select your environment, Deltas, product to trade, profile names, etc.
+5. Configure the variables at the top of ../Strategies/MomentumTrading/momentumTrading.js to select your Deltas, product to trade,Profile Names etc.  DO NOT ADD YOUR API INFORMATION HERE. You will use your API information in Step 6. 
 6. Create a .env file in the root directory of the projects repo with the following:
 
     API_KEY=\<your API key>
@@ -30,16 +30,6 @@ I suggest starting by using this program in the [Coinbase Pro Sandbox](https://d
 
 ### Restarting the bot:
 If at any point the bot stops running for any reason, the the bot keeps a file called positionData.json that tracks whether or not it was in a position, and the information associated with that position. If you restart the bot it will read that file and automatically pick up where it left off. Don't try to add more coins to the existing position or it will cause unexpected behavior since the bot won't know the associated costs with the newly added coin. You can, at any point, add USD to a portfolio, the bot will start trading with the newly added USD when it completes a buy/sell cycle. If you want to start the bot fresh without existing data, simply make sure there is no left over coin in your profile and delete the positionData.json file.
-
-The positionData.json file contains a JSON object with 3 fields, positionExists (boolean), positionAcquiredPrice (Number), positionAcquiredCost (Number).
-
-Example of a position existing positionData.json file:
-{"positionExists":true,"positionAcquiredPrice":48560.00000000001,"positionAcquiredCost":274.66836873840003}
-
-Example of a postion not existing positionData.json file:
-{"positionExists":false,"positionAcquiredPrice":228.69000000000003,"positionAcquiredCost":299.85119860983207}
-
-Notice that the position acquired cost and price fields still exist in the file when postionExists is faled, but they are ignored.
 
 ## How to contribute:
 1. Fork the repo.
