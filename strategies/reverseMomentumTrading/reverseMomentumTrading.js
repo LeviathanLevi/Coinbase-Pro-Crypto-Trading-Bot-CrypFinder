@@ -22,8 +22,8 @@ const websocketURI = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 
 //Trading config:
 //Global constants, consider tuning these values to optimize the bot's trading: 
-const sellPositionDelta = .0001; //The amount of change between valley and peak to trigger a sell off
-const buyPositionDelta = .0002; //The amount of change between the peak and valley price to trigger a buy in
+const sellPositionDelta = .01; //The amount of change between valley and peak to trigger a sell off
+const buyPositionDelta = .001; //The amount of change between the peak and valley price to trigger a buy in
 const orderPriceDelta = .001; //The amount of extra room to give the sell/buy orders to go through
 
 //Currency config:
@@ -360,7 +360,7 @@ async function returnHighestFee(){
  * The loop checks the position info to decide if the bot needs to try and buy or sell, it also checks if there's an available 
  * balance to be traded with. Then it calls gainPosition or losePosition appropiately and waits for them to finish and repeats.
  */
-async function momentumStrategyStart() {
+async function reverseMomentumStrategyStart() {
     try {
         let accountIDs = {};
         let lastPeakPrice;
@@ -471,4 +471,4 @@ async function momentumStrategyStart() {
     }
 }
 
-module.exports = momentumStrategyStart;
+module.exports = reverseMomentumStrategyStart;

@@ -127,7 +127,7 @@ async function gainPosition(positionInfo, tradingConfig, priceInfo, report) {
  * This is the method someone could use to setup loops to test a range of trading config values to
  * find the optimal configuration for a given set of data.
  */
-async function momentumStrategyAnalyzerStart() {
+async function reverseMomentumStrategyAnalyzerStart() {
     try {
         //Run once:
         const report = await analyzeStrategy(tradingConfig, dataFileName);
@@ -232,4 +232,4 @@ async function analyzeStrategy(tradingConfig, dataFileName) {
     }
 }
 
-module.exports = momentumStrategyAnalyzerStart;
+module.exports = reverseMomentumStrategyAnalyzerStart;
