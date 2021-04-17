@@ -22,8 +22,8 @@ const websocketURI = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 
 //Trading config:
 //Global constants, consider tuning these values to optimize the bot's trading: 
-const sellPositionDelta = .015; //The amount of change between valley and peak to trigger a sell off
-const buyPositionDelta = .02; //The amount of change between the peak and valley price to trigger a buy in
+const sellPositionDelta = .0005; //The amount of change between valley and peak to trigger a sell off
+const buyPositionDelta = .001; //The amount of change between the peak and valley price to trigger a buy in
 const orderPriceDelta = .001; //The amount of extra room to give the sell/buy orders to go through
 
 //Currency config:
@@ -145,7 +145,7 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds,
                 const lowestSellPrice = lastValleyPrice - (lastValleyPrice * orderPriceDelta);
                 const receivedValue = (lowestSellPrice * balance) - ((lowestSellPrice * balance) * tradingConfig.highestFee);
     
-                logger.debug(`Sell Position, current price: ${lastPeakPrice} needs to be less than or equal to ${target} to sell and the receivedValue: ${receivedValue} needs to be greater than the positionAcquiredCost: ${positionInfo.positionAcquiredCost}`);
+                logger.debug(`Sell Position, current price: ${lastPeakPrice} needs to be greater than or equal to ${target} to sell and the receivedValue: ${receivedValue} needs to be greater than the positionAcquiredCost: ${positionInfo.positionAcquiredCost}`);
 
                 if ((lastPeakPrice >= target) && (receivedValue > positionInfo.positionAcquiredCost)) {
                     logger.info("Attempting to sell position...");
@@ -162,11 +162,8 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds,
                 }
             } else if (lastValleyPrice > currentPrice) {
                 //New valley hit, reset values
-
                 lastPeakPrice = currentPrice;
                 lastValleyPrice = currentPrice;
-    
-                logger.debug(`Sell Position, last peak price: ${lastPeakPrice}`);
             }
         }
     } catch (err) {
@@ -198,15 +195,12 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, positionInf
                 //New peak hit, reset values
                 lastPeakPrice = currentPrice;
                 lastValleyPrice = currentPrice;
-    
-                logger.debug(`Gain position, last valley price: ${lastValleyPrice}`);
             } else if (lastValleyPrice > currentPrice) {
-                //New valley hit, track valley and check sell conditions
+                //New valley hit, track valley and check buy conditions
                 lastValleyPrice = currentPrice;
     
                 const target = lastPeakPrice - (lastPeakPrice * buyPositionDelta);
-                // const lowestSellPrice = lastValleyPrice - (lastValleyPrice * orderPriceDelta);
-                // const receivedValue = (lowestSellPrice * balance) - ((lowestSellPrice * balance) * tradingConfig.highestFee);
+
                 logger.debug(`Buy Position, current price: ${lastValleyPrice} needs to be less than or equal to ${target} to buy`);
     
                 if (lastValleyPrice <= target) {
