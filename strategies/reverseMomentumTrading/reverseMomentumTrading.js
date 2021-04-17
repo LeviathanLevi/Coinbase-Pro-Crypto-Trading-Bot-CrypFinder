@@ -12,7 +12,7 @@ const passphrase = `${process.env.API_PASSPHRASE}`;
  
 //******************** Setup these value configurations before running the program ******************************************
 
-//Real environment (uncomment out if using in the real environment WARNING: you can lose real money, use at your own risk):
+//Real environment (uncomment out if using in the real enviornment WARNING: you can lose real money, use at your own risk):
 //const apiURI = "https://api.pro.coinbase.com";
 //const websocketURI = "wss://ws-feed.pro.coinbase.com";
 
@@ -22,8 +22,8 @@ const websocketURI = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 
 //Trading config:
 //Global constants, consider tuning these values to optimize the bot's trading: 
-const sellPositionDelta = .02; //The amount of change between peak and valley to trigger a sell off
-const buyPositionDelta = .015; //The amount of change between the valley and peak price to trigger a buy in
+const sellPositionDelta = .01; //The amount of change between valley and peak to trigger a sell off
+const buyPositionDelta = .001; //The amount of change between the peak and valley price to trigger a buy in
 const orderPriceDelta = .001; //The amount of extra room to give the sell/buy orders to go through
 
 //Currency config:
@@ -63,7 +63,7 @@ let currentPrice;
 /**
  * Makes the program sleep to avoid hitting API limits and let the websocket update
  * 
- * @param {number} ms -> the number of milliseconds to wait 
+ * @param {number} ms -> the number of miliseconds to wait 
  */
 function sleep(ms) {
     return new Promise((resolve) => {
@@ -95,7 +95,7 @@ function listenForPriceUpdates(productPair) {
 
     //turn on the websocket for errors
     websocket.on("error", function(err) {
-        const message = "Error occurred in the websocket.";
+        const message = "Error occured in the websocket.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
         listenForPriceUpdates(productPair);
@@ -120,8 +120,8 @@ function listenForPriceUpdates(productPair) {
 
 /**
  * Loops forever until the conditions are right to attempt to sell the position. Every loop sleeps to let the currentPrice update
- * then updates the lastPeak/lastValley price as appropriate, if the price hits a new valley price it will check if the conditions are 
- * met to sell the position and call the method if appropriate.
+ * then updates the lastPeak/lastValley price as appropiate, if the price hits a new valley price it will check if the conditions are 
+ * met to sell the position and call the method if appropiate.
  * 
  * @param {number} balance              The amount of currency being traded with
  * @param {number} lastPeakPrice        Tracks the price highs
@@ -129,33 +129,27 @@ function listenForPriceUpdates(productPair) {
  * @param {Object} accountIds           The coinbase account ID associated with the API key used for storing a chunk of the profits in coinbase
  * @param {Object} positionInfo         Contains 3 fields, positionExists (bool), positionAcquiredPrice (number), and positionAcquiredCost(number)
  * @param {Object} productInfo          Contains information about the quote/base increment for the product pair
- * @param {Object} depositConfig        Contains information about whether to do a deposit and for how much after a sell
+ * @param {Object} depositConfig        Conatins information about whether to do a deposit and for how much after a sell
  * @param {Object} tradingConfig        Contains information about the fees and deltas 
  */
 async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds, positionInfo, productInfo, depositConfig, tradingConfig) {
     try {
         while (positionInfo.positionExists === true) {
             await sleep(250); //Let price update
-    
+            
             if (lastPeakPrice < currentPrice) {
-                //New peak hit, reset values
+                //New peak hit, track peak price and check buy conditions
                 lastPeakPrice = currentPrice;
-                lastValleyPrice = currentPrice;
     
-                logger.debug(`Sell Position, LPP: ${lastPeakPrice}`);
-            } else if (lastValleyPrice > currentPrice) {
-                //New valley hit, track valley and check sell conditions
-                lastValleyPrice = currentPrice;
-    
-                const target = lastPeakPrice - (lastPeakPrice * sellPositionDelta);
-                const lowestSellPrice = lastValleyPrice - (lastValleyPrice * orderPriceDelta);
+                const target = lastValleyPrice + (lastValleyPrice * sellPositionDelta);
+                const lowestSellPrice = lastPeakPrice - (lastPeakPrice * orderPriceDelta);
                 const receivedValue = (lowestSellPrice * balance) - ((lowestSellPrice * balance) * tradingConfig.highestFee);
     
-                logger.debug(`Sell Position, LVP: ${lastValleyPrice} needs to be less than or equal to ${target} to sell and the receivedValue: ${receivedValue} needs to be greater than the positionAcquiredCost: ${positionInfo.positionAcquiredCost}`);
-    
-                if ((lastValleyPrice <= target) && (receivedValue > positionInfo.positionAcquiredCost)) {
-                    logger.info("Attempting to sell position...");
+                logger.debug(`Sell Position, current price: ${lastPeakPrice} needs to be greater than or equal to ${target} to sell and the receivedValue: ${receivedValue} needs to be greater than the positionAcquiredCost: ${positionInfo.positionAcquiredCost}`);
 
+                if ((lastPeakPrice >= target) && (receivedValue > positionInfo.positionAcquiredCost)) {
+                    logger.info("Attempting to sell position...");
+                    
                     //Create a new authenticated client to prevent it from expiring or hitting API limits
                     authedClient = new CoinbasePro.AuthenticatedClient(
                         key,
@@ -166,10 +160,14 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds,
 
                     await sellPosition(balance, accountIds, positionInfo, lastValleyPrice, authedClient, coinbaseLibObject, productInfo, depositConfig, tradingConfig);
                 }
+            } else if (lastValleyPrice > currentPrice) {
+                //New valley hit, reset values
+                lastPeakPrice = currentPrice;
+                lastValleyPrice = currentPrice;
             }
         }
     } catch (err) {
-        const message = "Error occurred in losePosition method.";
+        const message = "Error occured in losePosition method.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
         throw err;
@@ -178,8 +176,8 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds,
 
 /**
  * Loops forever until the conditions are right to attempt to buy a position. Every loop sleeps to let the currentPrice update
- * then updates the lastPeak/lastValley price as appropriate, if the price hits a new peak price it will check if the conditions are 
- * met to buy the position and call the method if appropriate.
+ * then updates the lastPeak/lastValley price as appropiate, if the price hits a new peak price it will check if the conditions are 
+ * met to buy the position and call the method if appropiate.
  * 
  * @param {number} balance              The amount of currency being traded with
  * @param {number} lastPeakPrice        Tracks the price highs
@@ -192,18 +190,22 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, positionInf
     try {
         while (positionInfo.positionExists === false) {
             await sleep(250); //Let price update
-            
+    
             if (lastPeakPrice < currentPrice) {
-                //New peak hit, track peak price and check buy conditions
+                //New peak hit, reset values
                 lastPeakPrice = currentPrice;
+                lastValleyPrice = currentPrice;
+            } else if (lastValleyPrice > currentPrice) {
+                //New valley hit, track valley and check buy conditions
+                lastValleyPrice = currentPrice;
     
-                const target = lastValleyPrice + (lastValleyPrice * buyPositionDelta);
+                const target = lastPeakPrice - (lastPeakPrice * buyPositionDelta);
+
+                logger.debug(`Buy Position, current price: ${lastValleyPrice} needs to be less than or equal to ${target} to buy`);
     
-                logger.debug(`Buy Position, LPP: ${lastPeakPrice} needs to be greater than or equal to ${target} to buy`);
-    
-                if (lastPeakPrice >= target) {
+                if (lastValleyPrice <= target) {
                     logger.info("Attempting to buy position...");
-                    
+
                     //Create a new authenticated client to prevent it from expiring or hitting API limits
                     authedClient = new CoinbasePro.AuthenticatedClient(
                         key,
@@ -214,17 +216,10 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, positionInf
 
                     await buyPosition(balance, positionInfo, lastPeakPrice, authedClient, productInfo, tradingConfig);
                 }
-            } else if (lastValleyPrice > currentPrice) {
-                //New valley hit, reset values
-
-                lastPeakPrice = currentPrice;
-                lastValleyPrice = currentPrice;
-    
-                logger.debug(`Buy Position, LVP: ${lastValleyPrice}`);
             }
         }
     } catch (err) {
-        const message = "Error occurred in gainPosition method.";
+        const message = "Error occured in gainPosition method.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
         throw err;
@@ -327,7 +322,7 @@ async function getProductInfo(productInfo) {
         productInfo.quoteIncrementRoundValue = Number(quoteIncrementRoundValue);
         productInfo.baseIncrementRoundValue = Number(baseIncrementRoundValue);
     } catch (err) {
-        const message = "Error occurred in getProductInfo method.";
+        const message = "Error occured in getProfuctInfo method.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
         throw err;
@@ -353,7 +348,7 @@ async function returnHighestFee(){
         }
     }
     catch (err) {
-        const message = "Error occurred in getFees method.";
+        const message = "Error occured in getFees method.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
         throw err;
@@ -365,7 +360,7 @@ async function returnHighestFee(){
  * The loop checks the position info to decide if the bot needs to try and buy or sell, it also checks if there's an available 
  * balance to be traded with. Then it calls gainPosition or losePosition appropiately and waits for them to finish and repeats.
  */
-async function momentumStrategyStart() {
+async function reverseMomentumStrategyStart() {
     try {
         let accountIDs = {};
         let lastPeakPrice;
@@ -469,11 +464,11 @@ async function momentumStrategyStart() {
             }
         }
     } catch (err) {
-        const message = "Error occurred in bot, shutting down. Check the logs for more information.";
+        const message = "Error occured in bot, shutting down. Check the logs for more information.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
         process.exit(1);
     }
 }
 
-module.exports = momentumStrategyStart;
+module.exports = reverseMomentumStrategyStart;
