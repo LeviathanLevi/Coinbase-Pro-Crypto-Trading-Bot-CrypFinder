@@ -141,7 +141,7 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds,
                 //New peak hit, track peak price and check buy conditions
                 lastPeakPrice = currentPrice;
     
-                const target = lastValleyPrice + (lastValleyPrice * buyPositionDelta);
+                const target = lastValleyPrice + (lastValleyPrice * sellPositionDelta);
                 const lowestSellPrice = lastValleyPrice - (lastValleyPrice * orderPriceDelta);
                 const receivedValue = (lowestSellPrice * balance) - ((lowestSellPrice * balance) * tradingConfig.highestFee);
     
