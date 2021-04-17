@@ -23,7 +23,7 @@ const websocketURI = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 //Trading config:
 //Global constants, consider tuning these values to optimize the bot's trading: 
 const sellPositionDelta = .02; //The amount of change between peak and valley to trigger a sell off
-const buyPositionDelta = .015; //The amount of change between the peak and valley price to trigger a buy in
+const buyPositionDelta = .015; //The amount of change between the valley and peak price to trigger a buy in
 const orderPriceDelta = .001; //The amount of extra room to give the sell/buy orders to go through
 
 //Currency config:
