@@ -142,7 +142,7 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds,
                 lastPeakPrice = currentPrice;
     
                 const target = lastValleyPrice + (lastValleyPrice * sellPositionDelta);
-                const lowestSellPrice = lastValleyPrice - (lastValleyPrice * orderPriceDelta);
+                const lowestSellPrice = lastPeakPrice - (lastPeakPrice * orderPriceDelta);
                 const receivedValue = (lowestSellPrice * balance) - ((lowestSellPrice * balance) * tradingConfig.highestFee);
     
                 logger.debug(`Sell Position, current price: ${lastPeakPrice} needs to be greater than or equal to ${target} to sell and the receivedValue: ${receivedValue} needs to be greater than the positionAcquiredCost: ${positionInfo.positionAcquiredCost}`);

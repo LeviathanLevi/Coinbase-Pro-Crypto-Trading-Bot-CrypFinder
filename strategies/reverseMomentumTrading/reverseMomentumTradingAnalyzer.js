@@ -20,8 +20,8 @@ const dataFileName = "btcusd.csv";
 //The bot trading config values (See momentumTrading.js for more information on these values):
 const tradingConfig = {
     startingBalance: 500,       //Amount of cash the bot starts with
-    sellPositionDelta: .0001,    
-    buyPositionDelta: .0001,
+    sellPositionDelta: .1,    
+    buyPositionDelta: .01,
     orderPriceDelta: .001,
     highestFee: .005,
     depositingEnabled: false    //Whether or not the profits are deposited or re-invested
@@ -42,17 +42,10 @@ async function losePosition(positionInfo, tradingConfig, priceInfo, report) {
         if (priceInfo.lastPeakPrice < priceInfo.currentPrice) {
             priceInfo.lastPeakPrice = priceInfo.currentPrice;
 
-            //logger.debug(`last valley: ${priceInfo.lastValleyPrice}, last peak: ${priceInfo.lastPeakPrice}, sell pos delta: ${tradingConfig.sellPositionDelta}`);
-
             const target = priceInfo.lastValleyPrice + (priceInfo.lastValleyPrice * tradingConfig.sellPositionDelta);
-            const lowestSellPrice = priceInfo.lastValleyPrice - (priceInfo.lastValleyPrice * tradingConfig.orderPriceDelta);
+            const lowestSellPrice = priceInfo.currentPrice - (priceInfo.currentPrice * tradingConfig.orderPriceDelta);
             const receivedValue = (lowestSellPrice * positionInfo.assetAmount) - ((lowestSellPrice * positionInfo.assetAmount) * tradingConfig.highestFee);
-
-            // const lowestSellPrice = lastValleyPrice - (lastValleyPrice * orderPriceDelta);
-            // const receivedValue = (lowestSellPrice * balance) - ((lowestSellPrice * balance) * tradingConfig.highestFee);
             
-            logger.debug(`lowestSellPricE: ${lowestSellPrice}, receivedValue: ${receivedValue}, cost: ${positionInfo.positionAcquiredCost}, current price: ${priceInfo.currentPrice}, target: ${target}`);
-
             if ((priceInfo.lastPeakPrice >= target) && (receivedValue > positionInfo.positionAcquiredCost)) {
                 //Sell position:
                 logger.debug(`Sell position price: ${priceInfo.currentPrice}`);
@@ -78,7 +71,6 @@ async function losePosition(positionInfo, tradingConfig, priceInfo, report) {
                 logger.debug(`Position info after sell: ${JSON.stringify(positionInfo)}`);
             }
         } else if (priceInfo.lastValleyPrice > priceInfo.currentPrice) {
-            logger.debug(`HERE: ${priceInfo.lastValleyPrice}`);
             priceInfo.lastPeakPrice = priceInfo.currentPrice;
             priceInfo.lastValleyPrice = priceInfo.currentPrice;
         }
@@ -101,15 +93,12 @@ async function losePosition(positionInfo, tradingConfig, priceInfo, report) {
 async function gainPosition(positionInfo, tradingConfig, priceInfo, report) {
     try {
         if (priceInfo.lastPeakPrice < priceInfo.currentPrice) {
-            logger.debug(`new peak: ${priceInfo.currentPrice}`);
-
             priceInfo.lastPeakPrice = priceInfo.currentPrice;
             priceInfo.lastValleyPrice = priceInfo.currentPrice;
         } else if (priceInfo.lastValleyPrice > priceInfo.currentPrice) {
             priceInfo.lastValleyPrice = priceInfo.currentPrice;
 
             const target = priceInfo.lastPeakPrice - (priceInfo.lastPeakPrice * tradingConfig.buyPositionDelta);
-            logger.debug(`current price: ${priceInfo.currentPrice}, target: ${target}`);
             
             if (priceInfo.lastValleyPrice <= target) {
                 //buy position:
