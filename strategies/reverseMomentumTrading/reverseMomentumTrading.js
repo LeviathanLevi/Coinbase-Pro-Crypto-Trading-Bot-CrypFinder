@@ -136,26 +136,20 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds,
     try {
         while (positionInfo.positionExists === true) {
             await sleep(250); //Let price update
-    
+            
             if (lastPeakPrice < currentPrice) {
-                //New peak hit, reset values
+                //New peak hit, track peak price and check buy conditions
                 lastPeakPrice = currentPrice;
-                lastValleyPrice = currentPrice;
     
-                logger.debug(`Sell Position, LPP: ${lastPeakPrice}`);
-            } else if (lastValleyPrice > currentPrice) {
-                //New valley hit, track valley and check sell conditions
-                lastValleyPrice = currentPrice;
-    
-                const target = lastPeakPrice - (lastPeakPrice * sellPositionDelta);
+                const target = lastValleyPrice + (lastValleyPrice * buyPositionDelta);
                 const lowestSellPrice = lastValleyPrice - (lastValleyPrice * orderPriceDelta);
                 const receivedValue = (lowestSellPrice * balance) - ((lowestSellPrice * balance) * tradingConfig.highestFee);
     
-                logger.debug(`Sell Position, LVP: ${lastValleyPrice} needs to be less than or equal to ${target} to sell and the receivedValue: ${receivedValue} needs to be greater than the positionAcquiredCost: ${positionInfo.positionAcquiredCost}`);
-    
-                if ((lastValleyPrice <= target) && (receivedValue > positionInfo.positionAcquiredCost)) {
-                    logger.info("Attempting to sell position...");
+                logger.debug(`Sell Position, current price: ${lastPeakPrice} needs to be less than or equal to ${target} to sell and the receivedValue: ${receivedValue} needs to be greater than the positionAcquiredCost: ${positionInfo.positionAcquiredCost}`);
 
+                if ((lastPeakPrice >= target) && (receivedValue > positionInfo.positionAcquiredCost)) {
+                    logger.info("Attempting to sell position...");
+                    
                     //Create a new authenticated client to prevent it from expiring or hitting API limits
                     authedClient = new CoinbasePro.AuthenticatedClient(
                         key,
@@ -166,6 +160,13 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds,
 
                     await sellPosition(balance, accountIds, positionInfo, lastValleyPrice, authedClient, coinbaseLibObject, productInfo, depositConfig, tradingConfig);
                 }
+            } else if (lastValleyPrice > currentPrice) {
+                //New valley hit, reset values
+
+                lastPeakPrice = currentPrice;
+                lastValleyPrice = currentPrice;
+    
+                logger.debug(`Sell Position, last peak price: ${lastPeakPrice}`);
             }
         }
     } catch (err) {
@@ -192,18 +193,25 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, positionInf
     try {
         while (positionInfo.positionExists === false) {
             await sleep(250); //Let price update
-            
+    
             if (lastPeakPrice < currentPrice) {
-                //New peak hit, track peak price and check buy conditions
+                //New peak hit, reset values
                 lastPeakPrice = currentPrice;
+                lastValleyPrice = currentPrice;
     
-                const target = lastValleyPrice + (lastValleyPrice * buyPositionDelta);
+                logger.debug(`Gain position, last valley price: ${lastValleyPrice}`);
+            } else if (lastValleyPrice > currentPrice) {
+                //New valley hit, track valley and check sell conditions
+                lastValleyPrice = currentPrice;
     
-                logger.debug(`Buy Position, LPP: ${lastPeakPrice} needs to be greater than or equal to ${target} to buy`);
+                const target = lastPeakPrice - (lastPeakPrice * buyPositionDelta);
+                // const lowestSellPrice = lastValleyPrice - (lastValleyPrice * orderPriceDelta);
+                // const receivedValue = (lowestSellPrice * balance) - ((lowestSellPrice * balance) * tradingConfig.highestFee);
+                logger.debug(`Buy Position, current price: ${lastValleyPrice} needs to be less than or equal to ${target} to buy`);
     
-                if (lastPeakPrice >= target) {
+                if (lastValleyPrice <= target) {
                     logger.info("Attempting to buy position...");
-                    
+
                     //Create a new authenticated client to prevent it from expiring or hitting API limits
                     authedClient = new CoinbasePro.AuthenticatedClient(
                         key,
@@ -214,13 +222,6 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, positionInf
 
                     await buyPosition(balance, positionInfo, lastPeakPrice, authedClient, productInfo, tradingConfig);
                 }
-            } else if (lastValleyPrice > currentPrice) {
-                //New valley hit, reset values
-
-                lastPeakPrice = currentPrice;
-                lastValleyPrice = currentPrice;
-    
-                logger.debug(`Buy Position, LVP: ${lastValleyPrice}`);
             }
         }
     } catch (err) {
