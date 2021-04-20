@@ -13,36 +13,55 @@ const passphrase = `${process.env.API_PASSPHRASE}`;
 //******************** Setup these value configurations before running the program ******************************************
 
 //Real environment (uncomment out if using in the real environment WARNING: you can lose real money, use at your own risk):
-//const apiURI = "https://api.pro.coinbase.com";
-//const websocketURI = "wss://ws-feed.pro.coinbase.com";
-
-//Sandbox environment (uncomment out if using the sandbox for testing):
-const apiURI = "https://api-public.sandbox.pro.coinbase.com";
-const websocketURI = "wss://ws-feed-public.sandbox.pro.coinbase.com";
+const apiURI = process.env.TRADING_ENV ==="real" ? "https://api.pro.coinbase.com" : "https://api-public.sandbox.pro.coinbase.com" ;
+const websocketURI = process.env.TRADING_ENV ==="real" ? "wss://ws-feed.pro.coinbase.com" :  "wss://ws-feed-public.sandbox.pro.coinbase.com";
 
 //Trading config:
 //Global constants, consider tuning these values to optimize the bot's trading: 
-const sellPositionDelta = .02; //The amount of change between peak and valley to trigger a sell off
-const buyPositionDelta = .015; //The amount of change between the valley and peak price to trigger a buy in
-const orderPriceDelta = .001; //The amount of extra room to give the sell/buy orders to go through
+const sellPositionDelta = Number(process.env.SELL_POSITION_DELTA) || .02; //The amount of change between peak and valley to trigger a sell off
+const buyPositionDelta = Number(process.env.BUY_POSITION_DELTA) || .015; //The amount of change between the valley and peak price to trigger a buy in
+const orderPriceDelta = Number(process.env.ORDER_PRICE_DELTA) || .001; //The amount of extra room to give the sell/buy orders to go through
 
 //Currency config:
 //The pieces of the product pair, this is the two halves of coinbase product pair (examples of product pairs: BTC-USD, DASH-BTC, ETH-USDC). For BTC-USD the base currency is BTC and the quote currency is USD 
-const baseCurrencyName = "BTC";
-const quoteCurrencyName = "USD";
+const baseCurrencyName = process.env.BASE_CURRENCY_NAME || "BTC";
+const quoteCurrencyName = process.env.QUOTE_CURRENCY_NAME || "USD";
 
 //Profile config:
 //Coinbase portfolios (profiles):
-const tradingProfileName = "BTC trader"; //This is the name of the profile you want the bot to trade in
-const depositProfileName = "default"; //This is the name of the profile you want to deposit some profits to
+const tradingProfileName = process.env.TRADING_PROFILE_NAME || "BTC trader"; //This is the name of the profile you want the bot to trade in
+const depositProfileName = process.env.DEPOSIT_PROFILE_NAME || "default"; //This is the name of the profile you want to deposit some profits to
 
 //Deposit config:
-const depositingEnabled = true; //Choose whether or not you want you want to deposit a cut of the profits (Options: true/false)
-const depositingAmount = 0.5; //Enter the amount of profit you want deposited (Options: choose a percent between 1 and 100 in decimal form I.E. .5 = 50%)
+const depositingEnabled = process.env.DEPOSITING_ENABLED !== "false"; //Choose whether or not you want you want to deposit a cut of the profits (Options: true/false)
+const depositingAmount = Number(process.env.DEPOSITING_AMOUNT) || 0.5; //Enter the amount of profit you want deposited (Options: choose a percent between 1 and 100 in decimal form I.E. .5 = 50%)
 
 // Due to rounding errors the buy order may not have enough funds to execute the order. This is the minimum funds amount in dollars that
 // will be left in usd account to avoid this error. Default = 6 cents (.06).
-const balanceMinimum = .06; 
+const balanceMinimum = Number(process.env.BALANCE_MINIMUM) || .06; 
+
+console.log(
+  "\n",
+  JSON.stringify(
+    {
+      apiURI,
+      websocketURI,
+      sellPositionDelta,
+      buyPositionDelta,
+      orderPriceDelta,
+      baseCurrencyName,
+      quoteCurrencyName,
+      tradingProfileName,
+      depositProfileName,
+      depositingEnabled,
+      depositingAmount,
+      balanceMinimum,
+    },
+    null,
+    2
+  ),
+  "\n"
+);
 
 //***************************************************************************************************************************
  
