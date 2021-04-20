@@ -20,7 +20,7 @@ const websocketURI = process.env.TRADING_ENV ==="real" ? "wss://ws-feed.pro.coin
 //Global constants, consider tuning these values to optimize the bot's trading: 
 const sellPositionDelta = Number(process.env.SELL_POSITION_DELTA) || .02; //The amount of change between peak and valley to trigger a sell off
 const buyPositionDelta = Number(process.env.BUY_POSITION_DELTA) || .015; //The amount of change between the valley and peak price to trigger a buy in
-const orderPriceDelta = Number(process.env.BUY_POSITION_DELTA) || .001; //The amount of extra room to give the sell/buy orders to go through
+const orderPriceDelta = Number(process.env.ORDER_PRICE_DELTA) || .001; //The amount of extra room to give the sell/buy orders to go through
 
 //Currency config:
 //The pieces of the product pair, this is the two halves of coinbase product pair (examples of product pairs: BTC-USD, DASH-BTC, ETH-USDC). For BTC-USD the base currency is BTC and the quote currency is USD 
