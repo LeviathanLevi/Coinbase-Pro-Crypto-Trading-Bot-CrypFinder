@@ -25,7 +25,7 @@ const orderPriceDelta = Number(process.env.BUY_POSITION_DELTA) || .001; //The am
 //Currency config:
 //The pieces of the product pair, this is the two halves of coinbase product pair (examples of product pairs: BTC-USD, DASH-BTC, ETH-USDC). For BTC-USD the base currency is BTC and the quote currency is USD 
 const baseCurrencyName = process.env.BASE_CURRENCY_NAME || "BTC";
-const quoteCurrencyName = proccess.env.QUOTE_CURRENCY_NAME || "USD";
+const quoteCurrencyName = process.env.QUOTE_CURRENCY_NAME || "USD";
 
 //Profile config:
 //Coinbase portfolios (profiles):
