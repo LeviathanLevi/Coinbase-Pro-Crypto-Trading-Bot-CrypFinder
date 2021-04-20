@@ -14,7 +14,7 @@ I suggest starting by using this program in the [Coinbase Pro Sandbox](https://d
 2. Setup your Coinbase Pro account portfolios (portfolios are also referred to as profiles). Each bot that runs needs it's own portfolio. The bot will take any available balance in the portfolio that it's tied to via the API key and start trading with it. Coinbase Pro gives you the default (Default Portfolio) to start with, but, you can add up to four more (5 is the max). Don't use a bot to trade in the default portfolio because that's where money transfers go by default; which, means the funds could get swept up by the bot before you can allocate them where you want. Create a new portfolio for each bot you want to run, for example you could create one called "BTC trader" that the bot trades bitcoin inside of. If you wish to use the feature that deposits all or a portion of profits into another portfolio to save it then by default those deposits will go to the default portfolio, but you have the option to create a different portfolio to use instead. Take note of the profile names you created as you will need them in steps 5 & 6.
 3. Create the API key for the portfolio you want the bot to trade on, give it View/Trade/Transfer permissions and whitelist your public IP. [More info here](https://help.coinbase.com/en/pro/other-topics/api/how-do-i-create-an-api-key-for-coinbase-pro). 
 4. Clone the github repo locally and run `npm install` from within the repo directory.
-5. Configure the variables at the top of ../Strategies/MomentumTrading/momentumTrading.js to select your Deltas, product to trade,Profile Names etc.  DO NOT ADD YOUR API INFORMATION HERE. You will use your API information in Step 6. 
+5. Configure the variables at the top of ../Strategies/MomentumTrading/momentumTrading.js to select your Deltas, product to trade,Profile Names etc.  DO NOT ADD YOUR API INFORMATION HERE. You will use your API information in Step 6. The variables can also be added to the .env file instead of directly edited in code.
 6. Create a .env file in the root directory of the projects repo with the following:
 
     API_KEY=\<your API key>
@@ -23,7 +23,31 @@ I suggest starting by using this program in the [Coinbase Pro Sandbox](https://d
 
     API_PASSPHRASE=\<your API passphrase>
 
+    TRADING_ENV=\<real> Leaving this out defaults to sandbox enviornment
+
     Additionally consider adding `LOG_LEVEL=debug` here if you want the full debug logs.
+
+    All of the the trading variables can be configured in the code or in the .env below is a list of these variables:
+
+    SELL_POSITION_DELTA=\<decimal value>
+
+    BUY_POSITION_DELTA=\<decimal value>
+
+    ORDER_PRICE_DELTA=\<decimal value>
+
+    BASE_CURRENCY_NAME=\<string>
+
+    QUOTE_CURRENCY_NAME=\<string>
+
+    TRADING_PROFILE_NAME=\<string>
+
+    DEPOSIT_PROFILE_NAME=\<string>
+
+    DEPOSITING_ENABLED=\<bool>
+
+    DEPOSITING_AMOUNT=\<decimal from 1 to 0>
+
+    BALANCE_MINIMUM=\<decimal>
 
 7. Add some funds to your default portfolio and make sure there is no existing coin balance for the product you're trading if you're just starting the bot. See "Restarting the bot" if you want the bot to pick up where it left off after stopping it.
 8. Run the program with `node index.js` from within the repo directory.

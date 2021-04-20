@@ -12,7 +12,7 @@ const passphrase = `${process.env.API_PASSPHRASE}`;
  
 //******************** Setup these value configurations before running the program ******************************************
 
-//Real environment (uncomment out if using in the real environment WARNING: you can lose real money, use at your own risk):
+//Determines the enviornment, add TRADING_ENV=real to use the real enviornment otherwise defaults to the sandbox:
 const apiURI = process.env.TRADING_ENV ==="real" ? "https://api.pro.coinbase.com" : "https://api-public.sandbox.pro.coinbase.com" ;
 const websocketURI = process.env.TRADING_ENV ==="real" ? "wss://ws-feed.pro.coinbase.com" :  "wss://ws-feed-public.sandbox.pro.coinbase.com";
 
