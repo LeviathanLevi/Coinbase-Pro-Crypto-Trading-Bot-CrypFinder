@@ -40,29 +40,6 @@ const depositingAmount = Number(process.env.DEPOSITING_AMOUNT) || 0.5; //Enter t
 // will be left in usd account to avoid this error. Default = 6 cents (.06).
 const balanceMinimum = Number(process.env.BALANCE_MINIMUM) || .06; 
 
-console.log(
-  "\n",
-  JSON.stringify(
-    {
-      apiURI,
-      websocketURI,
-      sellPositionDelta,
-      buyPositionDelta,
-      orderPriceDelta,
-      baseCurrencyName,
-      quoteCurrencyName,
-      tradingProfileName,
-      depositProfileName,
-      depositingEnabled,
-      depositingAmount,
-      balanceMinimum,
-    },
-    null,
-    2
-  ),
-  "\n"
-);
-
 //***************************************************************************************************************************
  
 //authedClient used to the API calls supported by the coinbase pro api node library
@@ -386,6 +363,8 @@ async function returnHighestFee(){
  */
 async function momentumStrategyStart() {
     try {
+        logger.info(`Configuration:\napiURI: ${apiURI}\nwebsocketURI: ${websocketURI}\nsellPositionDelta: ${sellPositionDelta}\nbuyPositionDelta: ${buyPositionDelta}\norderPriceDelta: ${orderPriceDelta}\nbaseCurrencyName: ${baseCurrencyName}\nquoteCurrencyName: ${quoteCurrencyName}\ntradingProfileName: ${tradingProfileName}\ndepositProfileName: ${depositProfileName}\ndepositingEnabled: ${depositingEnabled}\ndepositingAmount: ${depositingAmount}\nbalanceMinimum: ${balanceMinimum}`);
+
         let accountIDs = {};
         let lastPeakPrice;
         let lastValleyPrice;

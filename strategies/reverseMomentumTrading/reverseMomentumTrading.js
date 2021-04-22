@@ -1,6 +1,6 @@
 const CoinbasePro = require("coinbase-pro");
 require('dotenv').config()
-const {buyPosition, sellPosition} = require("./buyAndSell");
+const { buyPosition, sellPosition } = require("./buyAndSell");
 const coinbaseProLib = require("../../coinbaseProLibrary");
 const pino = require("pino");
 const logger = pino({ level: process.env.LOG_LEVEL || "info" });
@@ -9,12 +9,12 @@ const fileSystem = require("fs");
 const key = `${process.env.API_KEY}`;
 const secret = `${process.env.API_SECRET}`;
 const passphrase = `${process.env.API_PASSPHRASE}`;
- 
+
 //******************** Setup these value configurations before running the program ******************************************
 
 //Determines the enviornment, add TRADING_ENV=real to use the real enviornment otherwise defaults to the sandbox:
-const apiURI = process.env.TRADING_ENV ==="real" ? "https://api.pro.coinbase.com" : "https://api-public.sandbox.pro.coinbase.com" ;
-const websocketURI = process.env.TRADING_ENV ==="real" ? "wss://ws-feed.pro.coinbase.com" :  "wss://ws-feed-public.sandbox.pro.coinbase.com";
+const apiURI = process.env.TRADING_ENV === "real" ? "https://api.pro.coinbase.com" : "https://api-public.sandbox.pro.coinbase.com";
+const websocketURI = process.env.TRADING_ENV === "real" ? "wss://ws-feed.pro.coinbase.com" : "wss://ws-feed-public.sandbox.pro.coinbase.com";
 
 //Trading config:
 //Global constants, consider tuning these values to optimize the bot's trading: 
@@ -38,39 +38,16 @@ const depositingAmount = Number(process.env.DEPOSITING_AMOUNT) || 0.5; //Enter t
 
 // Due to rounding errors the buy order may not have enough funds to execute the order. This is the minimum funds amount in dollars that
 // will be left in usd account to avoid this error. Default = 6 cents (.06).
-const balanceMinimum = Number(process.env.BALANCE_MINIMUM) || .06; 
+const balanceMinimum = Number(process.env.BALANCE_MINIMUM) || .06;
 
-console.log(
-    "\n",
-    JSON.stringify(
-      {
-        apiURI,
-        websocketURI,
-        sellPositionDelta,
-        buyPositionDelta,
-        orderPriceDelta,
-        baseCurrencyName,
-        quoteCurrencyName,
-        tradingProfileName,
-        depositProfileName,
-        depositingEnabled,
-        depositingAmount,
-        balanceMinimum,
-      },
-      null,
-      2
-    ),
-    "\n"
-  );
-  
 //***************************************************************************************************************************
- 
+
 //authedClient used to the API calls supported by the coinbase pro api node library
 let authedClient = new CoinbasePro.AuthenticatedClient(
-  key,
-  secret,
-  passphrase,
-  apiURI
+    key,
+    secret,
+    passphrase,
+    apiURI
 );
 
 //Custom coinbase library used for making the calls not supported by the coinbase pro api node library
@@ -88,7 +65,7 @@ function sleep(ms) {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
     });
-}   
+}
 
 /**
  * Creates the websocket object and turns it on to update the currentPrice
@@ -113,7 +90,7 @@ function listenForPriceUpdates(productPair) {
     );
 
     //turn on the websocket for errors
-    websocket.on("error", function(err) {
+    websocket.on("error", function (err) {
         const message = "Error occured in the websocket.";
         const errorMsg = new Error(err);
         logger.error({ message, errorMsg, err });
@@ -121,13 +98,13 @@ function listenForPriceUpdates(productPair) {
     });
 
     //Turn on the websocket for closes to restart it
-    websocket.on("close", function() {
+    websocket.on("close", function () {
         logger.debug("WebSocket closed, restarting...");
         listenForPriceUpdates(productPair);
     });
 
     //Turn on the websocket for messages
-    websocket.on("message", function(data) {
+    websocket.on("message", function (data) {
         if (data.type === "ticker") {
             if (currentPrice !== data.price) {
                 currentPrice = parseFloat(data.price);
@@ -155,20 +132,20 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds,
     try {
         while (positionInfo.positionExists === true) {
             await sleep(250); //Let price update
-            
+
             if (lastPeakPrice < currentPrice) {
                 //New peak hit, track peak price and check buy conditions
                 lastPeakPrice = currentPrice;
-    
+
                 const target = lastValleyPrice + (lastValleyPrice * sellPositionDelta);
                 const lowestSellPrice = lastPeakPrice - (lastPeakPrice * orderPriceDelta);
                 const receivedValue = (lowestSellPrice * balance) - ((lowestSellPrice * balance) * tradingConfig.highestFee);
-    
+
                 logger.debug(`Sell Position, current price: ${lastPeakPrice} needs to be greater than or equal to ${target} to sell and the receivedValue: ${receivedValue} needs to be greater than the positionAcquiredCost: ${positionInfo.positionAcquiredCost}`);
 
                 if ((lastPeakPrice >= target) && (receivedValue > positionInfo.positionAcquiredCost)) {
                     logger.info("Attempting to sell position...");
-                    
+
                     //Create a new authenticated client to prevent it from expiring or hitting API limits
                     authedClient = new CoinbasePro.AuthenticatedClient(
                         key,
@@ -209,7 +186,7 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, positionInf
     try {
         while (positionInfo.positionExists === false) {
             await sleep(250); //Let price update
-    
+
             if (lastPeakPrice < currentPrice) {
                 //New peak hit, reset values
                 lastPeakPrice = currentPrice;
@@ -217,11 +194,11 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, positionInf
             } else if (lastValleyPrice > currentPrice) {
                 //New valley hit, track valley and check buy conditions
                 lastValleyPrice = currentPrice;
-    
+
                 const target = lastPeakPrice - (lastPeakPrice * buyPositionDelta);
 
                 logger.debug(`Buy Position, current price: ${lastValleyPrice} needs to be less than or equal to ${target} to buy`);
-    
+
                 if (lastValleyPrice <= target) {
                     logger.info("Attempting to buy position...");
 
@@ -254,7 +231,7 @@ async function gainPosition(balance, lastPeakPrice, lastValleyPrice, positionInf
 async function getAccountIDs(productInfo) {
     try {
         let accountObject = {};
-    
+
         //Gets the account IDs for the product pairs in the portfolio
         const accounts = await authedClient.getAccounts();
 
@@ -265,7 +242,7 @@ async function getAccountIDs(productInfo) {
                 accountObject.quoteCurrencyAccountID = accounts[i].id;
             }
         }
-        
+
         //Gets all the profiles belonging to the user and matches the deposit and trading profile IDs
         const profiles = await coinbaseLibObject.getProfiles();
 
@@ -308,12 +285,12 @@ async function getProductInfo(productInfo) {
 
         const products = await authedClient.getProducts();
 
-        for (let i = 0; i < products.length; ++i) { 
+        for (let i = 0; i < products.length; ++i) {
             if (products[i].id === productInfo.productPair) {
                 productPairData = products[i];
             }
         }
-        
+
         if (productPairData === undefined) {
             throw new Error(`Error, could not find a valid matching product pair for "${productInfo.productPair}". Verify the product names is correct/exists.`);
         }
@@ -353,10 +330,10 @@ async function getProductInfo(productInfo) {
  * 
  * @param {number} highestFee The highest fee between the taker and maker fee
  */
-async function returnHighestFee(){
+async function returnHighestFee() {
     try {
         const feeResult = await coinbaseLibObject.getFees();
-        
+
         let makerFee = parseFloat(feeResult.maker_fee_rate);
         let takerFee = parseFloat(feeResult.taker_fee_rate);
 
@@ -381,6 +358,8 @@ async function returnHighestFee(){
  */
 async function reverseMomentumStrategyStart() {
     try {
+        logger.info(`Configuration:\napiURI: ${apiURI}\nwebsocketURI: ${websocketURI}\nsellPositionDelta: ${sellPositionDelta}\nbuyPositionDelta: ${buyPositionDelta}\norderPriceDelta: ${orderPriceDelta}\nbaseCurrencyName: ${baseCurrencyName}\nquoteCurrencyName: ${quoteCurrencyName}\ntradingProfileName: ${tradingProfileName}\ndepositProfileName: ${depositProfileName}\ndepositingEnabled: ${depositingEnabled}\ndepositingAmount: ${depositingAmount}\nbalanceMinimum: ${balanceMinimum}`);
+
         let accountIDs = {};
         let lastPeakPrice;
         let lastValleyPrice;
@@ -429,7 +408,7 @@ async function reverseMomentumStrategyStart() {
         //Retrieve product information:
         await getProductInfo(productInfo);
         logger.info(productInfo);
-        
+
         //Retrieve account IDs:
         accountIDs = await getAccountIDs(productInfo);
         logger.info(accountIDs)
@@ -440,7 +419,7 @@ async function reverseMomentumStrategyStart() {
         while (currentPrice == null) {
             await sleep(1000); //Get a price before starting
         }
-        
+
         logger.info(`Starting price of ${productInfo.baseCurrency} in ${productInfo.quoteCurrency} is: ${currentPrice}`);
 
         // eslint-disable-next-line no-constant-condition
