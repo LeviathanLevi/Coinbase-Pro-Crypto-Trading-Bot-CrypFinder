@@ -15,18 +15,18 @@ const csvParser = require("csv-parse/lib/sync");
 //***************Trade configuration*****************
 
 //The name of the file containing the data to be tested:
-const dataFileName = "btcusd.csv"; 
+const dataFileName = "btcusd.csv";
 
 //The bot trading config values (See momentumTrading.js for more information on these values):
 const tradingConfig = {
     startingBalance: 500,       //Amount of cash the bot starts with
-    sellPositionDelta: .1,    
+    sellPositionDelta: .1,
     buyPositionDelta: .01,
     orderPriceDelta: .001,
     highestFee: .005,
     depositingEnabled: false    //Whether or not the profits are deposited or re-invested
-}; 
-  
+};
+
 //***************************************************
 
 /**
@@ -45,12 +45,12 @@ async function losePosition(positionInfo, tradingConfig, priceInfo, report) {
             const target = priceInfo.lastValleyPrice + (priceInfo.lastValleyPrice * tradingConfig.sellPositionDelta);
             const lowestSellPrice = priceInfo.currentPrice - (priceInfo.currentPrice * tradingConfig.orderPriceDelta);
             const receivedValue = (lowestSellPrice * positionInfo.assetAmount) - ((lowestSellPrice * positionInfo.assetAmount) * tradingConfig.highestFee);
-            
+
             if ((priceInfo.lastPeakPrice >= target) && (receivedValue > positionInfo.positionAcquiredCost)) {
                 //Sell position:
                 logger.debug(`Sell position price: ${priceInfo.currentPrice}`);
                 report.numberOfSells += 1;
-             
+
                 if (tradingConfig.depositingEnabled) {
                     const profit = (positionInfo.assetAmount * priceInfo.currentPrice) - (tradingConfig.highestFee * (positionInfo.assetAmount * priceInfo.currentPrice)) - positionInfo.positionAcquiredCost;
                     report.amountOfProfitGenerated += profit;
@@ -99,7 +99,7 @@ async function gainPosition(positionInfo, tradingConfig, priceInfo, report) {
             priceInfo.lastValleyPrice = priceInfo.currentPrice;
 
             const target = priceInfo.lastPeakPrice - (priceInfo.lastPeakPrice * tradingConfig.buyPositionDelta);
-            
+
             if (priceInfo.lastValleyPrice <= target) {
                 //buy position:
                 logger.debug(`Buy position price: ${priceInfo.currentPrice}`);
@@ -132,7 +132,7 @@ async function reverseMomentumStrategyAnalyzerStart() {
         //Run once:
         const report = await analyzeStrategy(tradingConfig, dataFileName);
         logger.info(report);
-        
+
         //Instead of running it once someone could configure it to run loops for a given range of values to find the most optimal config
         //Just setup the tradingConfig to be your starting values then let the loops increment the values and run the report then compare for the most profitable
         //Example: 
@@ -162,7 +162,7 @@ async function reverseMomentumStrategyAnalyzerStart() {
 
         //         tradingConfigCopy.buyPositionDelta += .001; 
         //     }  
-            
+
         //     tradingConfigCopy.sellPositionDelta += .001;
         // }
 
@@ -196,8 +196,8 @@ async function analyzeStrategy(tradingConfig, dataFileName) {
         }
 
         const fileContent = await fileSystem.readFile(dataFileName);
-        const records = csvParser(fileContent, {columns: true});
-        
+        const records = csvParser(fileContent, { columns: true });
+
         const priceInfo = {
             currentPrice: parseFloat(records[0].high),
             lastPeakPrice: parseFloat(records[0].high),

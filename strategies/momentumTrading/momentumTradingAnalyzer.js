@@ -15,18 +15,18 @@ const csvParser = require("csv-parse/lib/sync");
 //***************Trade configuration*****************
 
 //The name of the file containing the data to be tested:
-const dataFileName = "xtzusd.csv"; 
+const dataFileName = "xtzusd.csv";
 
 //The bot trading config values (See momentumTrading.js for more information on these values):
 const tradingConfig = {
     startingBalance: 500,       //Amount of cash the bot starts with
-    sellPositionDelta: .0001,    
+    sellPositionDelta: .0001,
     buyPositionDelta: .0001,
     orderPriceDelta: .001,
     highestFee: .005,
     depositingEnabled: false    //Whether or not the profits are deposited or re-invested
-}; 
-  
+};
+
 //***************************************************
 
 /**
@@ -53,7 +53,7 @@ async function losePosition(positionInfo, tradingConfig, priceInfo, report) {
                 //Sell position:
                 logger.debug(`Sell position price: ${priceInfo.currentPrice}`);
                 report.numberOfSells += 1;
-             
+
                 if (tradingConfig.depositingEnabled) {
                     const profit = (positionInfo.assetAmount * priceInfo.currentPrice) - (tradingConfig.highestFee * (positionInfo.assetAmount * priceInfo.currentPrice)) - positionInfo.positionAcquiredCost;
                     report.amountOfProfitGenerated += profit;
@@ -132,7 +132,7 @@ async function momentumStrategyAnalyzerStart() {
         //Run once:
         const report = await analyzeStrategy(tradingConfig, dataFileName);
         logger.info(report);
-        
+
         //Instead of running it once someone could configure it to run loops for a given range of values to find the most optimal config
         //Just setup the tradingConfig to be your starting values then let the loops increment the values and run the report then compare for the most profitable
         //Example: 
@@ -162,7 +162,7 @@ async function momentumStrategyAnalyzerStart() {
 
         //         tradingConfigCopy.buyPositionDelta += .001; 
         //     }  
-            
+
         //     tradingConfigCopy.sellPositionDelta += .001;
         // }
 
@@ -196,8 +196,8 @@ async function analyzeStrategy(tradingConfig, dataFileName) {
         }
 
         const fileContent = await fileSystem.readFile(dataFileName);
-        const records = csvParser(fileContent, {columns: true});
-        
+        const records = csvParser(fileContent, { columns: true });
+
         const priceInfo = {
             currentPrice: parseFloat(records[0].high),
             lastPeakPrice: parseFloat(records[0].high),

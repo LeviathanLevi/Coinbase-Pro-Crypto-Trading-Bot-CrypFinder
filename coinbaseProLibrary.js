@@ -45,23 +45,23 @@ class coinbaseProLib {
             if (method == null || requestPath == null) {
                 throw new Error("Error in signMessage method, method or requestPath is null!");
             }
-    
+
             const timestamp = Date.now() / 1000;
-    
+
             let what;
-    
+
             if (body == null) {
                 what = timestamp + method + requestPath;
             } else {
                 what = timestamp + method + requestPath + JSON.stringify(body);
             }
-    
+
             // decode the base64 secret
             const key = Buffer.from(this.apiSecret, 'base64');
-    
+
             // create a sha256 hmac with the secret
             const hmac = crypto.createHmac('sha256', key);
-    
+
             // sign the require message with the hmac
             // and finally base64 encode the result
             const result = hmac.update(what).digest('base64');
@@ -90,21 +90,21 @@ class coinbaseProLib {
                 const requestPath = "/profiles";
                 const body = null;
                 const timestamp = Date.now() / 1000;
-    
+
                 const sign = await this.signMessage(method, requestPath, body);
-    
+
                 const headers = {
                     "CB-ACCESS-KEY": this.apiKey,
                     "CB-ACCESS-SIGN": sign,
                     "CB-ACCESS-TIMESTAMP": timestamp,
                     "CB-ACCESS-PASSPHRASE": this.apiPassphrase
                 };
-    
+
                 const fullpath = this.apiURI + requestPath;
-    
+
                 //Call API:
-                const result = await axios.get(fullpath, {headers});
-    
+                const result = await axios.get(fullpath, { headers });
+
                 return result.data;
             } catch (err) {
                 if (attempts < numberOfAttempts - 1) {
@@ -136,21 +136,21 @@ class coinbaseProLib {
                 const requestPath = "/fees";
                 const body = null;
                 const timestamp = Date.now() / 1000;
-    
+
                 const sign = await this.signMessage(method, requestPath, body);
-    
+
                 const headers = {
                     "CB-ACCESS-KEY": this.apiKey,
                     "CB-ACCESS-SIGN": sign,
                     "CB-ACCESS-TIMESTAMP": timestamp,
                     "CB-ACCESS-PASSPHRASE": this.apiPassphrase
                 };
-    
+
                 const fullpath = this.apiURI + requestPath;
-    
+
                 //Call API:
-                const result = await axios.get(fullpath, {headers});
-    
+                const result = await axios.get(fullpath, { headers });
+
                 return result.data;
             } catch (err) {
                 if (attempts < numberOfAttempts - 1) {
@@ -192,23 +192,23 @@ class coinbaseProLib {
                     currency,
                     amount,
                 };
-    
+
                 const timestamp = Date.now() / 1000;
-    
+
                 const sign = await this.signMessage(method, requestPath, body);
-    
+
                 const headers = {
                     "CB-ACCESS-KEY": this.apiKey,
                     "CB-ACCESS-SIGN": sign,
                     "CB-ACCESS-TIMESTAMP": timestamp,
                     "CB-ACCESS-PASSPHRASE": this.apiPassphrase
                 };
-    
+
                 const fullpath = this.apiURI + requestPath;
-    
+
                 //Call API:
-                const result = await axios.post(fullpath, body, {headers});
-    
+                const result = await axios.post(fullpath, body, { headers });
+
                 return result.data;
             } catch (err) {
                 if (attempts < numberOfAttempts - 1) {

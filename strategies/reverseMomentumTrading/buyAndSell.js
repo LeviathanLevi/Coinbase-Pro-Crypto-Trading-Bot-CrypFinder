@@ -15,7 +15,7 @@ function sleep(ms) {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
     });
-} 
+}
 
 /**
  * Places a sell limit order then loops to check the order status until the order is filled. Once filled, the method updates the positionInfo, does any depositing based on the 
@@ -45,7 +45,7 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
 
         const orderParams = {
             side: "sell",
-            price: priceToSell, 
+            price: priceToSell,
             size: orderSize,
             product_id: productInfo.productPair,
             time_in_force: "FOK"
@@ -65,7 +65,7 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
             await sleep(6000); //wait 6 seconds
             try {
                 orderDetails = await authedClient.getOrder(orderID); //Get latest order details
-            } catch(err) {
+            } catch (err) {
                 const message = "Error occured when attempting to get the order.";
                 const errorMsg = new Error(err);
                 logger.error({ message, errorMsg, err });
@@ -83,7 +83,7 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
                     try {
                         const writeData = JSON.stringify(positionInfo);
                         fileSystem.writeFileSync("positionData.json", writeData);
-                    } catch(err) {
+                    } catch (err) {
                         const message = "Error, failed to write the positionInfo to the positionData file in sellPosition. Continuing as normal but but positionDataTracking might not work correctly.";
                         const errorMsg = new Error(err);
                         logger.error({ message, errorMsg, err });
@@ -100,7 +100,7 @@ async function sellPosition(balance, accountIds, positionInfo, currentPrice, aut
 
                             //Transfer funds to depositProfileID
                             const transferResult = await coinbaseLibObject.profileTransfer(accountIds.tradeProfileID, accountIds.depositProfileID, currency, transferAmount);
-                            
+
                             logger.debug("transfer result: " + transferResult);
                         }
                     } else {
@@ -151,14 +151,14 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
 
         const orderParams = {
             side: "buy",
-            price: priceToBuy, 
-            size: orderSize, 
+            price: priceToBuy,
+            size: orderSize,
             product_id: productInfo.productPair,
             time_in_force: "FOK"
         };
 
         logger.info("Buy order params: " + JSON.stringify(orderParams));
-        
+
         //Place buy order
         const order = await authedClient.placeOrder(orderParams);
         logger.debug(order);
@@ -171,7 +171,7 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
             await sleep(6000); //wait 6 seconds
             try {
                 orderDetails = await authedClient.getOrder(orderID); //Get latest order details
-            } catch(err) {
+            } catch (err) {
                 const message = "Error occured when attempting to get the order.";
                 const errorMsg = new Error(err);
                 logger.error({ message, errorMsg, err });
@@ -192,13 +192,13 @@ async function buyPosition(balance, positionInfo, currentPrice, authedClient, pr
                     try {
                         const writeData = JSON.stringify(positionInfo);
                         fileSystem.writeFileSync("positionData.json", writeData);
-                    } catch(err) {
+                    } catch (err) {
                         const message = "Error, failed to write the positionInfo to the positionData file in buyPosition. Continuing as normal but but positionDataTracking might not work correctly.";
                         const errorMsg = new Error(err);
                         logger.error({ message, errorMsg, err });
                     }
 
-                    logger.info(positionInfo); 
+                    logger.info(positionInfo);
                 }
             }
         }
