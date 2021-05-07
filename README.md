@@ -95,7 +95,7 @@ The analyzers are a way to run data against the bot strategy to see how well it 
 - Implement a CLI (command line interface) to control the bot. This would make it so that users won't have to edit the code directly to configure and run the bot.
 
 ## Interested in the project?:
-Consider getting involved. Free to contact the creator on GitHub ([Levi Leuthold](https://github.com/LeviathanLevi)) for information on how to get started! Checkout the product road map to see what features are currently planned for the future or add your own ideas. 
+Consider getting involved. Feel free to contact the creator on GitHub ([Levi Leuthold](https://github.com/LeviathanLevi)) for information on how to get started! Checkout the product road map to see what features are currently planned for the future or add your own ideas. 
 
 ## Contributors:
 Levi Leuthold - Creator
