@@ -1,7 +1,7 @@
 # CrypFinder Bot 
 ## Version 1.5
 
-## CrypFinder Summary: 
+## Summary: 
 CrypFinder is a Coinbase Pro API trading bot that currently implements a basic momentum trading strategy and reverse momentum trading strategy in NodeJS using the Coinbase Pro API, as well as its own custom library for the endpoints that are not supported by the now deprecated Coinbase Pro NodeJS Library. Currently, Coinbase Pro limits the number of portfolios to five, this means that the bot can run up to four trading instances simultaneously per Coinbase Pro account. This bot can be modified to trade any product pairs available on Coinbase Pro, such as BTC-USD, ETH-USD, etc., but stablecoin (USDC to other coins) and crypto markets (coin to other coins) aren't currently tested, only USD markets (USD to coins). 
 
 The momentum strategy will work as follows: The bot will start by getting the amount of USD available for the provided API key's profile (profile=portfolio on the coinbase pro website). If the amount is greater than zero, it will monitor the price changes of the chosen product using a peak/valley system; if the price changes by the specified delta, it will purchase a position. Then, it will monitor price changes until the delta condition and profit condition are met; after selling for a profit, it can deposit a cut of the profit to a different portfolio for saving. The reverse momentum trading strategy, is, as the name implies the reverse where it sells when the price goes up and buys when it goes down.
@@ -23,7 +23,7 @@ I suggest starting by using this program in the [Coinbase Pro Sandbox](https://d
 
     API_PASSPHRASE=\<your API passphrase>
 
-    TRADING_ENV=\<real> Leaving this out defaults to sandbox enviornment
+    TRADING_ENV=\<real> Leaving this out defaults to sandbox environment
 
     Additionally consider adding `LOG_LEVEL=debug` here if you want the full debug logs.
 
@@ -60,20 +60,19 @@ The positionData.json file contains a JSON object with 3 fields, positionExists 
 Example of a position existing positionData.json file:
 {"positionExists":true,"positionAcquiredPrice":48560.00000000001,"positionAcquiredCost":274.66836873840003}
 
-Example of a postion not existing positionData.json file:
+Example of a position not existing positionData.json file:
 {"positionExists":false,"positionAcquiredPrice":228.69000000000003,"positionAcquiredCost":299.85119860983207}
 
-Notice that the position acquired cost and price fields still exist in the file when postionExists is faled, but they are ignored.
+Notice that the position acquired cost and price fields still exist in the file when positionExists is false, but they are ignored.
 
 ## How to contribute:
 1. Fork the repo.
 2. Clone the github repo locally and run `npm install` 
-3. Switch to the latest development branch to get the up-to-date progress.
-4. Create a new branch with a name that describes the feature/change you're making.
-5. Check the roadmap for ideas of things to work on.
-6. Make your changes and commit them with a descriptive message.
-7. Push your changes upstream.
-8. When you're done testing your changes, create a PR in your forked repository. Select LeviathanLevi/Coinbase-Pro-Crypto-Trading-Bot-CrypFinder to merge into. Then wait for approval.
+3. Create a new branch with a name that describes the feature/change you're making.
+4. Check the road map for ideas of things to work on.
+5. Make your changes and commit them with a descriptive message.
+6. Push your changes upstream.
+7. When you're done testing your changes, create a pull request to merge your repository into LeviathanLevi/Coinbase-Pro-Crypto-Trading-Bot-CrypFinder. Then wait for approval.
 
 ## Running the program out of sandbox:
 When you're confident in the configuration/code base and want to run it in the real environment, comment out the sandbox env variables and uncomment out the real API URI variables. Update the .env file with a valid API key. You can run this program on your own machine or consider using a server such as an AWS EC2 instance with an EIP (you need to whitelist the API IP). AWS EC2 offers a free tier instance for a year that works well for hosting.
@@ -90,13 +89,13 @@ The analyzers are a way to run data against the bot strategy to see how well it 
 
 [Flow diagram of the momentum strategy, open it in Google draw.io for best results (May be outdated, but can help to give an idea of how the program works)](https://drive.google.com/file/d/1sMg7nWcuCDwHS5wdwHgoe5qqODO7UEFA/view?usp=sharing)
 
-## Roadmap: 
+## Road map: 
 ### Possible future goals:
 - Add more strategies or make the current momentum strategy better. If making major changes to a current trading strategy, keep the old version and just add a new version of it to the same folder (momentumTradingV1, V2, etc).
 - Implement a CLI (command line interface) to control the bot. This would make it so that users won't have to edit the code directly to configure and run the bot.
 
 ## Interested in the project?:
-Consider getting involved. Free to contact the creator on GitHub ([Levi Leuthold](https://github.com/LeviathanLevi)) for information on how to get started! Checkout the product roadmap to see what features are currently planned for the future or add your own ideas. 
+Consider getting involved. Free to contact the creator on GitHub ([Levi Leuthold](https://github.com/LeviathanLevi)) for information on how to get started! Checkout the product road map to see what features are currently planned for the future or add your own ideas. 
 
 ## Contributors:
 Levi Leuthold - Creator
