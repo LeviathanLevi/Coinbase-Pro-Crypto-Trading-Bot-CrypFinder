@@ -1,6 +1,6 @@
 const CoinbasePro = require("coinbase-pro");
 require('dotenv').config()
-const { buyPosition, sellPosition } = require("./buyAndSell");
+const { buyPosition, sellPosition } = require("../../buyAndSell");
 const coinbaseProLib = require("../../coinbaseProLibrary");
 const pino = require("pino");
 const logger = pino({ level: process.env.LOG_LEVEL || "info" });
