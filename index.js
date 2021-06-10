@@ -12,11 +12,9 @@ const reverseMomentumStrategyStart = require("./strategies/reverseMomentumTradin
 const reverseMomentumStrategyAnalyzerStart = require("./strategies/reverseMomentumTrading/reverseMomentumTradingAnalyzer");
 
 
-momentumWithStopLossStrategyStart();
-
 /*** Make sure to configure the momentumStrategy in ./strategies/momentumTrading/momentumTrading.js or in the .env before launching ***/
 //Launches the momentum strategy and starts the bot:
-//momentumStrategyStart();
+momentumStrategyStart();
 
 //Launches the momentum strategy anaylzer for back testing:
 //momentumStrategyAnalyzerStart();
@@ -29,3 +27,9 @@ momentumWithStopLossStrategyStart();
 
 //Launches the reverse momentum strategy anaylzer for back testing:
 //reverseMomentumStrategyAnalyzerStart();
+
+// **********************************************************************************************************************
+
+/*** Make sure to configure the momentumWithStopLossStrategy in ./strategies/momentumTradingWithStopLoss/momentumTradingWithStopLoss.js or in the .env before launching ***/
+//Launches the momentum with stop loss strategy and starts the bot:
+//reverseMomentumStrategyStart();
