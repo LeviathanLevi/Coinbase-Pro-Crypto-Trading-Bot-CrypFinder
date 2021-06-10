@@ -21,7 +21,7 @@ const websocketURI = process.env.TRADING_ENV === "real" ? "wss://ws-feed.pro.coi
 const sellPositionDelta = Number(process.env.SELL_POSITION_DELTA) || .02; //The amount of change between peak and valley to trigger a sell off
 const buyPositionDelta = Number(process.env.BUY_POSITION_DELTA) || .015; //The amount of change between the valley and peak price to trigger a buy in
 const orderPriceDelta = Number(process.env.ORDER_PRICE_DELTA) || .001; //The amount of extra room to give the sell/buy orders to go through
-const stopLossDelta = Number(process.env.STOP_LOSS_DELTA) || .011; //The percent of loss allowed before selling and buying a lower position.
+const stopLossDelta = Number(process.env.STOP_LOSS_DELTA) || .11; //The percent of loss allowed before selling and buying a lower position.
 
 //Currency config:
 //The pieces of the product pair, this is the two halves of coinbase product pair (examples of product pairs: BTC-USD, DASH-BTC, ETH-USDC). For BTC-USD the base currency is BTC and the quote currency is USD 
