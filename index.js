@@ -32,4 +32,4 @@ momentumStrategyStart();
 
 /*** Make sure to configure the momentumWithStopLossStrategy in ./strategies/momentumTradingWithStopLoss/momentumTradingWithStopLoss.js or in the .env before launching ***/
 //Launches the momentum with stop loss strategy and starts the bot:
-//reverseMomentumStrategyStart();
+//momentumWithStopLossStrategyStart();
