@@ -147,7 +147,7 @@ async function losePosition(balance, lastPeakPrice, lastValleyPrice, accountIds,
                 const target = lastPeakPrice - (lastPeakPrice * sellPositionDelta);
                 const lowestSellPrice = lastValleyPrice - (lastValleyPrice * orderPriceDelta);
                 const receivedValue = (lowestSellPrice * balance) - ((lowestSellPrice * balance) * tradingConfig.highestFee);
-                const stopLossPrice = positionInfo.positionAcquiredCost - (positionInfo.positionAcquiredCost * stopLossDelta);
+                const stopLossPrice = positionInfo.positionAcquiredPrice - (positionInfo.positionAcquiredPrice * stopLossDelta);
 
                 logger.debug(`Sell Position, LVP: ${lastValleyPrice} needs to be less than or equal to ${target} to sell and the receivedValue: ${receivedValue} needs to be greater than the positionAcquiredCost: ${positionInfo.positionAcquiredCost} unless the LVP: ${lastValleyPrice} is less than the stop loss price: ${stopLossPrice}`);
 
