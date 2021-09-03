@@ -87,15 +87,9 @@ The analyzers are a way to run data against the bot strategy to see how well it 
 
 [Coinbase Pro NodeJS Library](https://www.npmjs.com/package/coinbase-pro)
 
-[Flow diagram of the momentum strategy, open it in Google draw.io for best results (May be outdated, but can help to give an idea of how the program works)](https://drive.google.com/file/d/1sMg7nWcuCDwHS5wdwHgoe5qqODO7UEFA/view?usp=sharing)
-
 ## Road map: 
 ### Possible future goals:
-- Add more strategies or make the current momentum strategy better. If making major changes to a current trading strategy, keep the old version and just add a new version of it to the same folder (momentumTradingV1, V2, etc).
-- Implement a CLI (command line interface) to control the bot. This would make it so that users won't have to edit the code directly to configure and run the bot.
+- Add a way to back test the momentumTradingWithStopLoss trading strategy
 
 ## Interested in the project?:
 Consider getting involved. Feel free to contact the creator on GitHub ([Levi Leuthold](https://github.com/LeviathanLevi)) for information on how to get started! Checkout the product road map to see what features are currently planned for the future or add your own ideas. 
-
-## Contributors:
-Levi Leuthold - Creator

@@ -26,13 +26,13 @@
   "dependencies": {
     "axios": "^0.21.1",
     "coinbase-pro": "^0.9.0",
-    "csv-parse": "^4.15.4",
+    "csv-parse": "^4.16.3",
     "csv-parser": "^2.3.3",
     "dotenv": "^8.6.0",
     "node-csv": "^0.1.2",
-    "pino": "^6.11.3"
+    "pino": "^6.13.1"
   },
   "devDependencies": {
-    "eslint": "^7.27.0"
+    "eslint": "^7.32.0"
   }
 }
