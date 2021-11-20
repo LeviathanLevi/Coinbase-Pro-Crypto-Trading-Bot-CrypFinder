@@ -357,6 +357,7 @@ async function returnHighestFee() {
  * balance to be traded with. Then it calls gainPosition or losePosition appropiately and waits for them to finish and repeats.
  */
 async function reverseMomentumStrategyStart() {
+    logger.debug(`Starting reverse momentum strategy`);
     try {
         logger.info(`Configuration:\napiURI: ${apiURI}\nwebsocketURI: ${websocketURI}\nsellPositionDelta: ${sellPositionDelta}\nbuyPositionDelta: ${buyPositionDelta}\norderPriceDelta: ${orderPriceDelta}\nbaseCurrencyName: ${baseCurrencyName}\nquoteCurrencyName: ${quoteCurrencyName}\ntradingProfileName: ${tradingProfileName}\ndepositProfileName: ${depositProfileName}\ndepositingEnabled: ${depositingEnabled}\ndepositingAmount: ${depositingAmount}\nbalanceMinimum: ${balanceMinimum}`);
 
