@@ -14,30 +14,32 @@ const reverseMomentumStrategyStart = require("./strategies/reverseMomentumTradin
 const reverseMomentumStrategyAnalyzerStart = require("./strategies/reverseMomentumTrading/reverseMomentumTradingAnalyzer");
 
 const strategy = process.env.TRADING_STRATEGY || 'momentum';
+const backtest = process.env.BACK_TEST || 'false';
 
 logger.info(`Selected ${strategy} strategy`)
 
 /*** Make sure to configure the momentumStrategy in ./strategies/momentumTrading/momentumTrading.js or in the .env before launching ***/
 if (strategy == 'momentum') {
+    if (backtest == 'true') {
+        //Launches the momentum strategy anaylzer for back testing:
+        momentumStrategyAnalyzerStart();
+    } else {
     // Launches the momentum strategy and starts the bot:
     momentumStrategyStart();
+    }
 }
-
-//Launches the momentum strategy anaylzer for back testing:
-//momentumStrategyAnalyzerStart();
-
-// **********************************************************************************************************************
 
 /*** Make sure to configure the momentumStrategy in ./strategies/momentumTrading/momentumTrading.js or in the .env before launching ***/
 if (strategy == 'reverse') {
+    if (backtest == 'true') {
+        //Launches the reverse momentum strategy anaylzer for back testing:
+        reverseMomentumStrategyAnalyzerStart();
+    } else {
     //Launches the reverse momentum strategy and starts the bot:
     reverseMomentumStrategyStart();
+    }
 }
 
-//Launches the reverse momentum strategy anaylzer for back testing:
-//reverseMomentumStrategyAnalyzerStart();
-
-// **********************************************************************************************************************
 
 /*** Make sure to configure the momentumWithStopLossStrategy in ./strategies/momentumTradingWithStopLoss/momentumTradingWithStopLoss.js or in the .env before launching ***/
 if (strategy == 'stoploss') {
