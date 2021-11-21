@@ -48,6 +48,10 @@ I suggest starting by using this program in the [Coinbase Pro Sandbox](https://d
     DEPOSITING_AMOUNT=\<decimal from 1 to 0>
 
     BALANCE_MINIMUM=\<decimal>
+    
+    TRADING_STRATEGY=\<momentum | reverse | stoploss>
+
+    BACK_TESTING=\<bool>
 
 7. Add some funds to your default portfolio and make sure there is no existing coin balance for the product you're trading if you're just starting the bot. See "Restarting the bot" if you want the bot to pick up where it left off after stopping it.
 8. Run the program with `node index.js` from within the repo directory.
