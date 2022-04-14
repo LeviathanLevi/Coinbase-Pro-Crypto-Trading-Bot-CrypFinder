@@ -1,6 +1,12 @@
 # CrypFinder Bot 
 ## Version 1.55
 
+## PROJECT UPDATE 4/13/2022:
+It's been almost a year since I've updated this project since I've been very busy. Thanks to everyone who has contributed and helped improve the project! I've since decided that I wanted to re-start this project from a clean slate. I started a new project you can find here: https://github.com/LeviathanLevi/BinanceUS-Crypto-Trading-Bot . My new bot uses the BinanceUS exchange for the significantly lower fees, as well python and the fully supported [python-binance library](https://python-binance.readthedocs.io/en/latest/). The Project is significantly simpler, I did away with much of the complexity that made this project a bit of a mess. It's currently missing some important features like backtesting but I think that it will be a great starting point to build out a good integrated trading algorithm.  Please check it out and and consider contributing and helping me improve it!
+
+<b>TLDR: I'm done working on this project check out my new version [HERE](https://github.com/LeviathanLevi/BinanceUS-Crypto-Trading-Bot)</b>
+
+
 ## Summary: 
 CrypFinder is a Coinbase Pro API trading bot that currently implements a basic momentum trading strategy and reverse momentum trading strategy in NodeJS using the Coinbase Pro API, as well as its own custom library for the endpoints that are not supported by the now deprecated Coinbase Pro NodeJS Library. Currently, Coinbase Pro limits the number of portfolios to five, this means that the bot can run up to four trading instances simultaneously per Coinbase Pro account. This bot can be modified to trade any product pairs available on Coinbase Pro, such as BTC-USD, ETH-USD, etc., but stablecoin (USDC to other coins) and crypto markets (coin to other coins) aren't currently tested, only USD markets (USD to coins). 
 
