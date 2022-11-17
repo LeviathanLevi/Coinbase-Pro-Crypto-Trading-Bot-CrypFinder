@@ -150,6 +150,3 @@ About
 # Cryp Finder
 positionData.json
 *.csv
-
-# VSCODE
-.vscode/
