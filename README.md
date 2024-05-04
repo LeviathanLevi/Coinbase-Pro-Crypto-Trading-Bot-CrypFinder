@@ -1,6 +1,9 @@
 # CrypFinder Bot 
 ## Version 1.55
 
+## Update: 
+I made a simplified version of this bot for BinanceUS using Python also on my profile. I don't really work on this project anymore but it can serve as a starting point very basic crypto trading bot
+
 ## Summary: 
 CrypFinder is a Coinbase Pro API trading bot that currently implements a basic momentum trading strategy and reverse momentum trading strategy in NodeJS using the Coinbase Pro API, as well as its own custom library for the endpoints that are not supported by the now deprecated Coinbase Pro NodeJS Library. Currently, Coinbase Pro limits the number of portfolios to five, this means that the bot can run up to four trading instances simultaneously per Coinbase Pro account. This bot can be modified to trade any product pairs available on Coinbase Pro, such as BTC-USD, ETH-USD, etc., but stablecoin (USDC to other coins) and crypto markets (coin to other coins) aren't currently tested, only USD markets (USD to coins). 
 
@@ -75,7 +78,7 @@ Notice that the position acquired cost and price fields still exist in the file 
 7. When you're done testing your changes, create a pull request to merge your repository into LeviathanLevi/Coinbase-Pro-Crypto-Trading-Bot-CrypFinder. Then wait for approval.
 
 ## Running the program out of sandbox:
-When you're confident in the configuration/code base and want to run it in the real environment, comment out the sandbox env variables and uncomment out the real API URI variables. Update the .env file with a valid API key. You can run this program on your own machine or consider using a server such as an AWS EC2 instance with an EIP (you need to whitelist the API IP). AWS EC2 offers a free tier instance for a year that works well for hosting.
+When you're confident in the configuration/code base and want to run it in the real environment, comment out the sandbox env variables and uncomment out the real API URI variables. Update the .env file with a valid API key
 
 ## Momentum and reverse momentum trading strategy analyzer:
 The analyzers are a way to run data against the bot strategy to see how well it performs. It takes in a .csv file with OHLC data. Carston Klein has already compiled a massive dataset that is perfect for this task and it's available for free on Kaggle [check it out](https://www.kaggle.com/tencars/392-crypto-currency-pairs-at-minute-resolution?select=ampusd.csv). After downloading the file for the coin data you want, just trim the .csv file to the length of time you want to test and run the analyzer with the configuration you want and it will generate a report showing how it did. He also wrote [this article](https://medium.com/coinmonks/how-to-get-historical-crypto-currency-data-954062d40d2d) on how to get similar data yourself.
@@ -88,14 +91,3 @@ The analyzers are a way to run data against the bot strategy to see how well it 
 [Coinbase Pro NodeJS Library](https://www.npmjs.com/package/coinbase-pro)
 
 [Flow diagram of the momentum strategy, open it in Google draw.io for best results (May be outdated, but can help to give an idea of how the program works)](https://drive.google.com/file/d/1sMg7nWcuCDwHS5wdwHgoe5qqODO7UEFA/view?usp=sharing)
-
-## Road map: 
-### Possible future goals:
-- Add more strategies or make the current momentum strategy better. If making major changes to a current trading strategy, keep the old version and just add a new version of it to the same folder (momentumTradingV1, V2, etc).
-- Implement a CLI (command line interface) to control the bot. This would make it so that users won't have to edit the code directly to configure and run the bot.
-
-## Interested in the project?:
-Consider getting involved. Feel free to contact the creator on GitHub ([Levi Leuthold](https://github.com/LeviathanLevi)) for information on how to get started! Checkout the product road map to see what features are currently planned for the future or add your own ideas. 
-
-## Contributors:
-Levi Leuthold - Creator
