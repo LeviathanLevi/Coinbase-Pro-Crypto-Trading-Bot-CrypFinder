@@ -1,0 +1,112 @@
+// Combined HTML and JavaScript for Trading Bot Interface
+
+// HTML content as a string
+const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Bot Interface</title>
+</head>
+<body>
+<h1>Trading Bot Interface</h1>
+<form id="botForm">
+<label for="param1">Parameter 1:</label>
+<input type="text" id="param1" name="param1"><br><br>
+<label for="param2">Parameter 2:</label>
+<input type="text" id="param2" name="param2"><br><br>
+<button type="submit">Execute Bot</button>
+</form>
+<div id="output"></div>
+</body>
+</html>
+`;
+
+// JavaScript logic for trading bot interface
+document.addEventListener('DOMContentLoaded', () => {
+    const botForm = document.getElementById('botForm');
+    const outputDiv = document.getElementById('output');
+    
+    botForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(botForm);
+        const params = {};
+        
+        formData.forEach((value, key) => {
+            params[key] = value;
+        });
+        
+        try {
+            const response = await fetch('http://localhost:5000/execute-bot', { // Change URL to match your Python server address
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(params)
+            });
+            
+            const data = await response.json();
+            outputDiv.textContent = JSON.stringify(data);
+        } catch (error) {
+            console.error('Error executing trading bot:', error);
+            outputDiv.textContent = 'An error occurred while executing the trading bot';
+        }
+    });
+    
+    // Function to fetch market data from Coinbase Pro API
+    async function fetchMarketData() {
+        try {
+            const response = await fetch('https://api.exchange.coinbase.com/products/BTC-USD/ticker');
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error fetching market data from Coinbase Pro API:', error);
+            throw error;
+        }
+    }
+    
+    // Function to analyze market data and make trading decisions
+    function analyzeMarketData(marketData) {
+        // Example: Simple strategy - buy if current price is lower than yesterday's low
+        const currentPrice = parseFloat(marketData.price);
+        // Add your trading strategy logic here
+        // For demonstration purposes, let's just return 'buy' if the price is lower than $10,000
+        return currentPrice < 10000 ? 'buy' : 'hold';
+    }
+    
+    // Function to execute a trade based on the trading decision
+    async function executeTrade(action) {
+        try {
+            // Example: Log the trade action
+            console.log('Trade action:', action);
+            // You would add your actual trade execution logic here
+        } catch (error) {
+            console.error('Error executing trade:', error);
+            throw error;
+        }
+    }
+    
+    // Main function to run the trading bot
+    async function runTradingBot() {
+        try {
+            // Fetch market data from Coinbase Pro API
+            const marketData = await fetchMarketData();
+            
+            // Analyze market data and make trading decision
+            const action = analyzeMarketData(marketData);
+            
+            // Execute trade based on the trading decision
+            await executeTrade(action);
+        } catch (error) {
+            console.error('Error running trading bot:', error);
+        }
+    }
+    
+    // Run the trading bot periodically (e.g., every minute)
+    setInterval(runTradingBot, 60000); // 60000 milliseconds = 1 minute
+});
+
+// Append HTML content to the document
+document.body.innerHTML = htmlContent;
